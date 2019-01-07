@@ -1,3 +1,9 @@
+zsnapd (0.3.0-1~0mag2) unstable; urgency=medium
+
+  * Fix lintian warnings about debian/control
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Mon, 07 Jan 2019 21:29:44 +1300
+
 zsnapd (0.3.0-1~0mag1) unstable; urgency=medium
 
   * Fix low-hanging initial lintian errors and warnings
