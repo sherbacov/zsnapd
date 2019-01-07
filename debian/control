@@ -3,6 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Matthew Grant <matt@mattgrant.net.nz>
 Build-Depends: debhelper (>= 11), python3-all, dh-python, python3-setuptools, python
+X-Python3-Version: >=3.5
 Standards-Version: 4.1.3
 Homepage: https://github.com/khenderick/zfs-snap-manager
 #Vcs-Browser: https://salsa.debian.org/debian/zfs-snap-manager
@@ -22,19 +23,19 @@ Description: ZFS Snapshot Daemon written in python
  Python daemon that manages ZFS snapshots and send/receive backup.  
  Based on zfs-snap-manager.
  .
- * Configuration is stored in configuration files with the ini file 
-   format.
- * Uses Python3
- * Native systemd support.
- * Triggers the configured actions based on time or a '.trigger' file 
-   present in the dataset's mountpoint.
- * Can take snapshots (with a yyyymmdd timestamp format).
- * Can replicate snapshots to/from other nodes.
- * Push based when the replication source has access to the replication
-   target.
- * Pull based when the replication source has no access to the replication
-   target. Typically when you don't want to give all nodes access to the
-   backup/replication target.
- * Cleans all snapshots with the yyyymmdd timestamp format based on a GFS 
-   schema (Grandfather, Father, Son).
- * Supports pre and post commands.
+   * Configuration is stored in configuration files with the ini file 
+     format.
+   * Uses Python3
+   * Native systemd support.
+   * Triggers the configured actions based on time or a '.trigger' file 
+     present in the dataset's mountpoint.
+   * Can take snapshots (with a yyyymmdd timestamp format).
+   * Can replicate snapshots to/from other nodes.
+   * Push based when the replication source has access to the replication
+     target.
+   * Pull based when the replication source has no access to the replication
+     target. Typically when you don't want to give all nodes access to the
+     backup/replication target.
+   * Cleans all snapshots with the yyyymmdd timestamp format based on a GFS 
+     schema (Grandfather, Father, Son).
+   * Supports pre and post commands.
