@@ -1,0 +1,7 @@
+zsnapd (0.3.0-1~0mag0) unstable; urgency=medium
+
+  * Initial release
+  * Update code to run on Python 3
+  * Rebase daemon mode and logging on py-magcode-core
+ 
+ -- Matthew Grant <matt@mattgrant.net.nz>  Tue, 01 Jan 2019 18:44:05 +1300

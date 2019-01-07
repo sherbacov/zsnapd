@@ -1,0 +1,13 @@
+[Unit]
+Description=ZFS Snapshot Daemon
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/share/zsnapd/zsnapd --systemd
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

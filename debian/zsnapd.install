@@ -1,0 +1,3 @@
+scripts/*.py	/usr/share/zsnapd/scripts
+zsnapd		/usr/share/zsnapd/zsnapd
+etc/zsnapd	/etc/zsnapd
