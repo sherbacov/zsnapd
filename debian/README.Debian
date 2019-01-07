@@ -1,6 +1,11 @@
-zfs-snap-manager for Debian
---------------------------
+zsnapd for Debian
+-----------------
 
-<possible notes regarding this package - if none, delete this file>
+Based on zfs-snap-manager. This is a native systemd Python daemon
+
+Edit the .conf files in /etc/zsnapd, particularly datasets.conf
+
+Have a look in the /usr/share/doc/zsnap/examples directory, and in
+README.md.gz for documentation and instructions.
 
  -- Matthew Grant <matt@mattgrant.net.nz>  Tue, 01 Jan 2019 18:44:05 +1300
