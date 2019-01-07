@@ -34,6 +34,7 @@ override_dh_install:
 
 override_dh_clean:
 	-rm -rf debian/zsnapd
+	-rm -rf scripts/__pycache__
 	dh_clean
 
 # dh_make generated override targets

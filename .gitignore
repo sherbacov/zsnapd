@@ -7,4 +7,9 @@ __pycache__/
 pkg/*
 src/*
 packages/*
-
+# Stuff in debian we should not worry about
+/debian/zsnapd/
+/debian/*.debhelper*
+/debian/*.substvars
+/debian/files
+/debian/debhelper-build-stamp
