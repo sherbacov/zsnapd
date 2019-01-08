@@ -112,7 +112,7 @@ class ZsnapdProcess(ProcessDaemon):
             if debug_mark:
                 log_debug("----MARK---- sleep(%s) seconds ----"
                         % sleep_time) 
-            libc_sleep(int(sleep_time))
+            libc_sleep(sleep_time)
 
         log_info('Exited main loop - process terminating normally.')
         sys.exit(os.EX_OK)
