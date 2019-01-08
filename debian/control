@@ -13,7 +13,7 @@ Package: zsnapd
 Architecture: all
 Depends: ${misc:Depends},
   python3:any (>= 3.3.2~),
-  python3-magcode-core (>=1.4.10~),
+  python3-magcode-core (>=1.4.11~),
   python3-setproctitle,
   python3-psutil,
   zfsutils-linux,
