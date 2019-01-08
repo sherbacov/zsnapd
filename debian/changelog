@@ -1,3 +1,9 @@
+zsnapd (0.3.0-1~0mag5) unstable; urgency=medium
+
+  * Move to libc_sleep() from py-magcode-core v1.4.11
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Tue, 08 Jan 2019 18:50:56 +1300
+
 zsnapd (0.3.0-1~0mag4) unstable; urgency=medium
 
   * Fix install directory errors
