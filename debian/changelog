@@ -1,3 +1,9 @@
+zsnapd (0.3.1-1~0mag0) unstable; urgency=medium
+
+  * New debian/control with python3-magcode-core ver
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Tue, 08 Jan 2019 18:55:32 +1300
+
 zsnapd (0.3.0-1~0mag5) unstable; urgency=medium
 
   * Move to libc_sleep() from py-magcode-core v1.4.11
