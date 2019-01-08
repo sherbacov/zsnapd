@@ -29,7 +29,6 @@ import copy
 import signal
 import gc
 import json
-import ctypes
 
 import psutil
 
@@ -45,14 +44,14 @@ from magcode.core.process import SignalHandler
 from magcode.core.globals_ import *
 from magcode.core.utility import get_numeric_setting
 from magcode.core.utility import get_boolean_setting
+from magcode.core.utility import libc_sleep
 # import this to set up config file settings etc
 import scripts.globals_
 from scripts.manager import Manager
+
 USAGE_MESSAGE = "Usage: %s [-dhv] [-c config_file]"
 COMMAND_DESCRIPTION = "ZFS Snap Managment Daemon"
 
-# Load libc shared library:
-libc = ctypes.CDLL('libc.so.6')
 
 class ZsnapdProcess(ProcessDaemon):
     """
@@ -113,7 +112,7 @@ class ZsnapdProcess(ProcessDaemon):
             if debug_mark:
                 log_debug("----MARK---- sleep(%s) seconds ----"
                         % sleep_time) 
-            libc.sleep(int(sleep_time))
+            libc_sleep(sleep_time)
 
         log_info('Exited main loop - process terminating normally.')
         sys.exit(os.EX_OK)
