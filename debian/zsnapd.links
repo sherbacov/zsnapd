@@ -1,0 +1,3 @@
+/usr/share/zsnapd/zsnapd	/usr/sbin/zsnapd
+/usr/share/zsnapd/zsnapd-cfgtest	/usr/bin/zsnapd-cfgtest
+/usr/share/zsnapd/zsnapd-trigger	/usr/bin/zsnapd-trigger
