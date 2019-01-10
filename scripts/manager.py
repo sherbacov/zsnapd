@@ -53,7 +53,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_target': ds_name_syntax,
         'replicate_source': ds_name_syntax,
         'replicate_endpoint': NETCMD_REGEX,
-        'compression': BOOLEAN_REGEX,
+        'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
         }
 
