@@ -1,3 +1,5 @@
 scripts/*.py	/usr/share/zsnapd/scripts
 zsnapd		/usr/share/zsnapd
+zsnapd-cfgtest	/usr/share/zsnapd
+zsnapd-trigger	/usr/share/zsnapd
 etc/zsnapd	/etc
