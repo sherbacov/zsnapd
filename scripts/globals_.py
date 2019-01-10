@@ -6,15 +6,17 @@ from magcode.core.globals_ import settings
 
 # settings for where files are
 settings['config_dir'] = '/etc/zsnapd'
-settings['log_dir'] = '/var/log'
-settings['run_dir'] = '/var/run'
+settings['log_dir'] = '/var/log/zsnapd'
+settings['run_dir'] = '/run'
 settings['config_file'] = settings['config_dir'] + '/' + 'process.conf'
 # Zsnapd only uses one daemon
 settings['pid_file'] = settings['run_dir'] + '/' + 'zsnapd.pid'
-settings['log_file'] = settings['log_dir'] \
-        + '/' + settings['process_name'] + '.log'
+#settings['log_file'] = settings['log_dir'] \
+#        + '/' + settings['process_name'] + '.log'
+settings['log_file'] = ''
 settings['panic_log'] = settings['log_dir'] \
         + '/' + settings['process_name'] + '-panic.log'
+settings['syslog_facility'] = ''
 
 # zsnapd.py
 # Dataset config file
