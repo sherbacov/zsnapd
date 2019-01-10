@@ -53,7 +53,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_target': ds_name_syntax,
         'replicate_source': ds_name_syntax,
         'replicate_endpoint': NETCMD_REGEX,
-        'compression': PATH_REGEX,
+        'compression': BOOLEAN_REGEX,
         'schema': CLEANER_REGEX,
         }
 
@@ -200,7 +200,7 @@ class Manager(object):
                                         if previous_snapshot is not None:
                                             # There is a snapshot on this host that is not yet on the other side.
                                             size = ZFS.get_size(dataset, previous_snapshot, snapshot)
-                                            log_info('  {0}@{1} > {2}@{3} ({4})'.format(dataset, previous_snapshot, remote_dataset, snapshot, size))
+                                            log_info('  {0}@{1} > {0}@{2} ({3})'.format(dataset, previous_snapshot, snapshot, size))
                                             ZFS.replicate(dataset, previous_snapshot, snapshot, remote_dataset, replicate_settings['endpoint'], direction='push', compression=replicate_settings['compression'])
                                             ZFS.hold(dataset, snapshot)
                                             ZFS.hold(remote_dataset, snapshot, replicate_settings['endpoint'])
@@ -215,7 +215,7 @@ class Manager(object):
                                         if previous_snapshot is not None:
                                             # There is a remote snapshot that is not yet on the local host.
                                             size = ZFS.get_size(remote_dataset, previous_snapshot, snapshot, replicate_settings['endpoint'])
-                                            log_info('  {0}@{1} > {2}@{3} ({4})'.format(remote_dataset, previous_snapshot, dataset, snapshot, size))
+                                            log_info('  {0}@{1} > {0}@{2} ({3})'.format(remote_dataset, previous_snapshot, snapshot, size))
                                             ZFS.replicate(remote_dataset, previous_snapshot, snapshot, dataset, replicate_settings['endpoint'], direction='pull', compression=replicate_settings['compression'])
                                             ZFS.hold(dataset, snapshot)
                                             ZFS.hold(remote_dataset, snapshot, replicate_settings['endpoint'])
@@ -228,7 +228,7 @@ class Manager(object):
                                     # No remote snapshot, full replication
                                     snapshot = local_snapshots[-1]
                                     size = ZFS.get_size(dataset, None, snapshot)
-                                    log_info('  {0}@         > {1}@{2} ({3})'.format(dataset, remote_dataset, snapshot, size))
+                                    log_info('  {0}@         > {0}@{1} ({2})'.format(dataset, snapshot, size))
                                     ZFS.replicate(dataset, None, snapshot, remote_dataset, replicate_settings['endpoint'], direction='push', compression=replicate_settings['compression'])
                                     ZFS.hold(dataset, snapshot)
                                     ZFS.hold(remote_dataset, snapshot, replicate_settings['endpoint'])
@@ -238,7 +238,7 @@ class Manager(object):
                                     # No local snapshot, full replication
                                     snapshot = remote_snapshots[remote_dataset][-1]
                                     size = ZFS.get_size(remote_dataset, None, snapshot, replicate_settings['endpoint'])
-                                    log_info('  {0}@         > {1}@{2} ({3})'.format(remote_dataset, dataset, snapshot, size))
+                                    log_info('  {0}@         > {0}@{1} ({2})'.format(remote_dataset, snapshot, size))
                                     ZFS.replicate(remote_dataset, None, snapshot, dataset, replicate_settings['endpoint'], direction='pull', compression=replicate_settings['compression'])
                                     ZFS.hold(dataset, snapshot)
                                     ZFS.hold(remote_dataset, snapshot, replicate_settings['endpoint'])
