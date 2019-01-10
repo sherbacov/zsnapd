@@ -63,6 +63,65 @@ class Manager(object):
     """
 
     @staticmethod
+    def touch_trigger(ds_settings, *args):
+        """
+        Runs around creating .trigger files for datasets with time = trigger
+        """
+        result = True
+        snapshots = ZFS.get_snapshots()
+        datasets = ZFS.get_datasets()
+        ds_candidates = [ds for ds in args if ds[0] != '/']
+        mnt_candidates = [m for m in args if m[0] == '/']
+        trigger_mnts_dict = {ds_settings[ds]['mountpoint']:ds for ds in ds_settings if ds_settings[ds]['time'] == 'trigger'}
+        if len(ds_candidates):
+            for candidate in ds_candidates:
+                if candidate not in datasets:
+                    log_error("Dataset '{0}' does not exist.".format(candidate))
+                    sys.exit(os.EX_DATAERR)
+                if candidate not in ds_settings:
+                    log_error("Dataset '{0}' is not configured fo zsnapd.".format(candidate))
+                    sys.exit(os.EX_DATAERR)
+        if len(mnt_candidates):
+            for candidate in mnt_candidates:
+                if candidate not in trigger_mnts_dict:
+                    log_error("Trigger mount '{0}' not configured for zsnapd".format(candidate))
+                    sys.exit(os.EX_DATAERR)
+                if trigger_mnts_dict[candidate] not in datasets:
+                    log_error("Dataset '{0}' for trigger mount {1} does not exist.".format(candidate, trigger_mnts_dict[candidate]))
+                    sys.exit(os.EX_DATAERR)
+                ds_candidates.append(trigger_mnts_dict[candidate])
+
+        for dataset in datasets:
+            if dataset in ds_settings:
+                if (len(ds_candidates) and dataset not in ds_candidates):
+                    continue
+                try:
+                    dataset_settings = ds_settings[dataset]
+                    local_snapshots = snapshots.get(dataset, [])
+
+                    take_snapshot = dataset_settings['snapshot'] is True
+                    replicate = dataset_settings['replicate'] is not None
+
+                    # Decide whether we need to handle this dataset
+                    execute = False
+                    if take_snapshot is True or replicate is True:
+                        if dataset_settings['time'] == 'trigger':
+                            # We wait until we find a trigger file in the filesystem
+                            trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
+                            if os.path.exists(trigger_filename):
+                                continue
+                            if (not os.path.isdir(dataset_settings['mountpoint'])):
+                                log_error("Directory '{0}' does not exist.".format(dataset_settings['mountpoint']))
+                                result = False
+                                continue
+                            trigger_file = open(trigger_filename, 'wt')
+                            trigger_file.close()
+                except Exception as ex:
+                    log_error('Exception: {0}'.format(str(ex)))
+
+        return result
+
+    @staticmethod
     def run(ds_settings):
         """
         Executes a single run where certain datasets might or might not be snapshotted
