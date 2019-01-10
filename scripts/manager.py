@@ -97,16 +97,13 @@ class Manager(object):
                     continue
                 try:
                     dataset_settings = ds_settings[dataset]
-                    local_snapshots = snapshots.get(dataset, [])
 
                     take_snapshot = dataset_settings['snapshot'] is True
                     replicate = dataset_settings['replicate'] is not None
 
-                    # Decide whether we need to handle this dataset
-                    execute = False
                     if take_snapshot is True or replicate is True:
                         if dataset_settings['time'] == 'trigger':
-                            # We wait until we find a trigger file in the filesystem
+                            # Trigger file testing and creation
                             trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
                             if os.path.exists(trigger_filename):
                                 continue
