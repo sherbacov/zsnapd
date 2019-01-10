@@ -65,23 +65,21 @@ class ZsnapdProcess(ProcessDaemon):
         """
         Main process for zfssnapd
         """
-
         if (settings['rpdb2_wait']):
             # a wait to attach with rpdb2...
             log_info('Waiting for rpdb2 to attach.')
             time.sleep(float(settings['rpdb2_wait']))
 
         log_info('program starting.')
-        log_debug("The daemon_canary is: '%s'" % settings['daemon_canary'])
+        log_debug("The daemon_canary is: '{0}'".format(settings['daemon_canary']))
         # Do a nice output message to the log
         pwnam = pwd.getpwnam(settings['run_as_user'])
         if setproctitle_support:
             gpt_output = getproctitle()
         else:
             gpt_output = "no getproctitle()"
-        log_debug("PID: %s process name: '%s' daemon: '%s' User: '%s' UID: %d GID %d" 
-                % (os.getpid(), gpt_output, self.i_am_daemon(), pwnam.pw_name,
-                    os.getuid(), os.getgid()))
+        log_debug("PID: {0} process name: '{1}' daemon: '{2}' User: '{3}' UID: {4} GID {5}".format( 
+                os.getpid(), gpt_output, self.i_am_daemon(), pwnam.pw_name, os.getuid(), os.getgid()))
 
         if (settings['memory_debug']):
             # Turn on memory debugging
@@ -93,7 +91,7 @@ class ZsnapdProcess(ProcessDaemon):
         self.proc_monitor = psutil.Process(pid=os.getpid())
 
         # Initialise  a few nice things for the loop
-        debug_mark = get_boolean_setting('debug_mark') 
+        debug_mark = get_boolean_setting('debug_mark')
         sleep_time = get_numeric_setting('sleep_time', float)
         debug_sleep_time = get_numeric_setting('debug_sleep_time', float)
         sleep_time = debug_sleep_time if debug() else sleep_time
@@ -110,8 +108,7 @@ class ZsnapdProcess(ProcessDaemon):
                 log_error('Exception: {0}'.format(str(ex)))
             
             if debug_mark:
-                log_debug("----MARK---- sleep(%s) seconds ----"
-                        % sleep_time) 
+                log_debug("----MARK---- sleep({0}) seconds ----".format(sleep_time))
             libc_sleep(sleep_time)
 
         log_info('Exited main loop - process terminating normally.')

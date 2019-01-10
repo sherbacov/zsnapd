@@ -21,20 +21,41 @@
 # THE SOFTWARE.
 
 """
-Provides the overal functionality
+Provides the overall functionality
 """
 
 import configparser
 import time
 import os
+import re
 from datetime import datetime
 
 from magcode.core.globals_ import *
+from magcode.core.utility import MagCodeConfigError
 
 from scripts.zfs import ZFS
 from scripts.clean import Cleaner
+from scripts.clean import CLEANER_REGEX
 from scripts.helper import Helper
 
+ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
+ds_name_reserved_regex = r'^(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*$'
+BOOLEAN_REGEX = r'^([tT]rue|[fF]alse|[oO]n|[oO]ff|0|1)$'
+PATH_REGEX = r'[-_./~a-zA-Z0-9]+'
+NETCMD_REGEX = r'^[-_./~a-zA-Z0-9 	]*$'
+SHELLCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]+$'
+ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
+        'replicate': BOOLEAN_REGEX,
+        'time': r'^(trigger|[0-9]{1,2}:[0-9][0-9])$',
+        'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
+        'preexec': SHELLCMD_REGEX,
+        'postexec': SHELLCMD_REGEX,
+        'replicate_target': ds_name_syntax,
+        'replicate_source': ds_name_syntax,
+        'replicate_endpoint': NETCMD_REGEX,
+        'compression': BOOLEAN_REGEX,
+        'schema': CLEANER_REGEX,
+        }
 
 class Manager(object):
     """
@@ -87,7 +108,12 @@ class Manager(object):
                         if take_snapshot is True:
                             # Take today's snapshotzfs
                             log_info('Taking snapshot {0}@{1}'.format(dataset, today))
-                            ZFS.snapshot(dataset, today)
+                            try:
+                                ZFS.snapshot(dataset, today)
+                            except Exception as ex:
+                                # if snapshot fails move onto next one
+                                log_error('Exception: {0}'.format(str(ex)))
+                                continue
                             local_snapshots.append(today)
                             log_info('Taking snapshot {0}@{1} complete'.format(dataset, today))
 
@@ -174,6 +200,35 @@ class Manager(object):
                     log_error('Exception: {0}'.format(str(ex)))
 
     @staticmethod
+    def check_dataset_syntax (config):
+        """
+        Checks the dataset syntax of read in items
+        """
+        result = True
+        for dataset in config.sections():
+            if (not re.match(ds_name_syntax, dataset)
+                    or re.match(ds_name_reserved_regex, dataset)):
+                log_error("Dataset name '{0}' is invalid.".format(dataset))
+                result = False
+            for item in config[dataset].keys():
+                try:
+                    value_syntax = ds_syntax_dict[item]
+                except AttributeError as ex:
+                    log_error("[{0}] - item '{1}' is not a valid dataset keyword.".format(dataset, item))
+                    result = False
+                if (not ds_syntax_dict[item]):
+                    continue
+                value = config[dataset][item]
+                if (not re.match(ds_syntax_dict[item], value)):
+                    log_error("[{0}] {1} - value '{2}' invalid. Must match regex '{3}'.".format(dataset, item, value, ds_syntax_dict[item]))
+                    result = False
+                if item in ('replicate_source', 'replicate_target'):
+                    if re.match(ds_name_reserved_regex, value):
+                        log_error("[{0}] {1} - value '{2}' invalid. Must not start with a ZFS reserved keyword.".format(dataset, item, value))
+                        result = False
+        return result
+
+    @staticmethod
     def read_ds_config ():
         """
         Read dataset configuration
@@ -182,6 +237,8 @@ class Manager(object):
         try:
             config = configparser.RawConfigParser()
             config.read(settings['dataset_config_file'])
+            if not Manager.check_dataset_syntax(config):
+                raise MagCodeConfigError("Invalid dataset syntax in config file '{0}'".format(settings['dataset_config_file']))
             for dataset in config.sections():
                 ds_settings[dataset] = {'mountpoint': config.get(dataset, 'mountpoint') \
                                             if config.has_option(dataset, 'mountpoint') else None,
@@ -202,7 +259,7 @@ class Manager(object):
                                                       if config.has_option(dataset, 'compression') else None}
        # Handle file opening and read errors
         except (IOError,OSError) as e:
-            log_error('Exception while parsing configuration file: {0}'.format(str(ex)))
+            log_error('Exception while parsing configuration file: {0}'.format(str(e)))
             if (e.errno == errno.EPERM or e.errno == errno.EACCES):
                 systemd_exit(os.EX_NOPERM, SDEX_NOPERM)
             else:
@@ -210,11 +267,11 @@ class Manager(object):
 
         # Handle all configuration file parsing errors
         except configparser.Error as e:
-            log_error('Exception while parsing configuration file: {0}'.format(str(ex)))
+            log_error('Exception while parsing configuration file: {0}'.format(str(e)))
             systemd_exit(os.EX_CONFIG, SDEX_CONFIG)
         
-        except Exception as e:
-            log_error('Exception while parsing configuration file: {0}'.format(str(ex)))
+        except MagCodeConfigError as e:
+            log_error(str(e))
             systemd_exit(os.EX_CONFIG, SDEX_CONFIG)
 
         return ds_settings
