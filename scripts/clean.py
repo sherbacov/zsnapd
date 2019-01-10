@@ -30,6 +30,8 @@ from magcode.core.globals_ import log_info
 
 from scripts.zfs import ZFS
 
+CLEANER_REGEX = r'^(?P<days>[0-9]+)d(?P<weeks>[0-9]+)w(?P<months>[0-9]+)m(?P<years>[0-9]+)y$'
+
 class Cleaner(object):
     """
     Cleaner class, containing all methods for cleaning up ZFS snapshots
@@ -42,7 +44,7 @@ class Cleaner(object):
         today = datetime.now()
 
         # Parsing schema
-        match = re.match('^(?P<days>[0-9]+)d(?P<weeks>[0-9]+)w(?P<months>[0-9]+)m(?P<years>[0-9]+)y$', schema)
+        match = re.match(CLEANER_REGEX, schema)
         if not match:
             log_info('Got invalid schema for dataset {0}: {1}'.format(dataset, schema))
             return

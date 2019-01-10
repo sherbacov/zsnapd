@@ -2,11 +2,13 @@
 __pycache__/
 *.pyc
 # Vim backup file
+*~
 *.swp
 .idea/*
 pkg/*
 src/*
 packages/*
+<<<<<<< HEAD
 # Stuff in debian we should not worry about
 /debian/zsnapd/
 /debian/*.debhelper*
