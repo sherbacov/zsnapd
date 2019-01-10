@@ -1,3 +1,9 @@
+zsnapd (0.4.1-1~0mag1) unstable; urgency=medium
+
+  * Fix missing command stub file in /usr/share/zsnapd
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 10 Jan 2019 19:19:38 +1300
+
 zsnapd (0.4.1-1~0mag0) unstable; urgency=medium
 
   * Stop syslog, and logging to file by default
