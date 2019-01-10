@@ -1,3 +1,15 @@
+zsnapd (0.4.1-1~0mag0) unstable; urgency=medium
+
+  * Stop syslog, and logging to file by default
+  * zsnapd dataset configuration checking
+  * Clean up and remove unneeded imports
+  * Zsnapd trigger file creation utility
+  * Update template config and tidy ups
+  * Add symlinks to /usr/bin and /usr/bin etc
+  * Update zsnapd.service for debian package
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 10 Jan 2019 19:09:54 +1300
+
 zsnapd (0.3.1-1~0mag0) unstable; urgency=medium
 
   * New debian/control with python3-magcode-core ver
