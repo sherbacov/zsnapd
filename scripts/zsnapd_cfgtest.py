@@ -20,17 +20,7 @@
 # THE SOFTWARE.
 
 import os
-import os.path
-import errno
 import sys
-import pwd
-import time
-import copy
-import signal
-import gc
-import json
-
-import psutil
 
 # A bit of nice stuff to set up ps output as much as we can...
 try:
@@ -40,12 +30,7 @@ except ImportError:
     setproctitle_support = False
 
 from magcode.core.process import Process
-from magcode.core.process import MemoryDebugCmdLineArg
-from magcode.core.process import SystemdCmdLineArg
-import magcode.core.process
 from magcode.core.globals_ import *
-from magcode.core.utility import get_numeric_setting
-from magcode.core.utility import get_boolean_setting
 # import this to set up config file settings etc
 import scripts.globals_
 from scripts.manager import Manager
