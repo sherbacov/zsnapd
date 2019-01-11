@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 # Copyright (c) 2018 Matthew Grant <matt@mattgrant.net.nz>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,16 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-"""Stub file for zsnapd-cfgtest.
+from distutils.core import setup
 
-File system location of this file determines the first entry on sys.path, thus
-its placement, and symlinks from /usr/local/sbin.
-"""
-
-from scripts.zsnapd_trigger import ZsnapdTriggerProcess
-
-# Do the business
-process = ZsnapdTriggerProcess()
-process.main()
-
+setup(name='zsnapd',
+    version='0.4.2',
+    description='ZFS Snapshot Daemon',
+    author='Matthew Grant',
+    author_email='matt@mattgrant.net.nz',
+    url='http://mattgrant.net.nz/software/zsnapd',
+    packages=['zsnapd',])
 

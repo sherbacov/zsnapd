@@ -42,7 +42,6 @@ ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
 ds_name_reserved_regex = r'^(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*$'
 BOOLEAN_REGEX = r'^([tT]rue|[fF]alse|[oO]n|[oO]ff|0|1)$'
 PATH_REGEX = r'[-_./~a-zA-Z0-9]+'
-NETCMD_REGEX = r'^[-_./~a-zA-Z0-9 	]*$'
 SHELLCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]+$'
 ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate': BOOLEAN_REGEX,
@@ -52,8 +51,8 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'postexec': SHELLCMD_REGEX,
         'replicate_target': ds_name_syntax,
         'replicate_source': ds_name_syntax,
-        'replicate_endpoint': NETCMD_REGEX,
-        'compression': BOOLEAN_REGEX,
+        'replicate_endpoint': SHELLCMD_REGEX,
+        'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
         }
 

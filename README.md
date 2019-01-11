@@ -60,6 +60,12 @@ The daemon configuration file is in /etc/zsnapd/process.conf in ini format and a
 		#log_file_max_size_kbytes = 1024
 		#log_file_backup_count = 7
 
+    [zsnapd-cfgtest]
+    log_level = DEBUG
+
+    [zsnapd-trigger]
+    log_level = DEBUG
+
 Adjust sleep_time (in seconds) to set interval zsnapd runs code.  For 30 minute intervals, set to
 1800 seconds.
 
@@ -82,6 +88,10 @@ Note the default configuration file is /etc/zsnapd/process.conf, and systemd nat
 
 The dataset configuration file is located in /etc/zsnapd and is called datasets.conf. It's an ini
 file containing a section per dataset/volume that needs to be managed.
+
+zsnapd-cfgtest tests the data set conifugration file, and zsnapd-trigger writes out .trigger files
+based on the data set configuration. It takes either the mount point of the target dataset as an argument, 
+or the full dataset name including storage pool.
 
 Examples
 
