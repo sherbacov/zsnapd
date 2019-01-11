@@ -16,6 +16,9 @@ PYTHON3:=$(shell py3versions -vr)
 override_dh_python3:
 	dh_python3 /usr/share/zsnapd
 
+override_dh_auto_build:
+	/bin/true
+
 override_dh_auto_install:
 	/bin/true
 
