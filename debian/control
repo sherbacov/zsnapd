@@ -11,14 +11,16 @@ Homepage: https://github.com/khenderick/zfs-snap-manager
 
 Package: zsnapd
 Architecture: all
+Recommends:  openssh-server,
+  openssh-client,
+  mbuffer,
+  sudo
 Depends: ${misc:Depends},
   python3:any (>= 3.3.2~),
   python3-magcode-core (>=1.4.14~),
   python3-setproctitle,
   python3-psutil,
-  zfsutils-linux,
-  openssh-server,
-  openssh-client
+  zfsutils-linux
 Description: ZFS Snapshot Daemon written in python
  Python daemon that manages ZFS snapshots and send/receive backup.  
  Based on zfs-snap-manager.
