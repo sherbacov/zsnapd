@@ -1,3 +1,13 @@
+zsnapd (0.4.2-1~0mag0) unstable; urgency=medium
+
+  * Update debian/control for py-magcode-core version
+  * Fix compression keyword syntax check.
+  * Documentation, service defN, and metadata updates
+  * Update python3 #! 1st line to use env
+  * Expand acceptable parameters for replicate_target
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Fri, 11 Jan 2019 13:25:40 +1300
+
 zsnapd (0.4.1-1~0mag1) unstable; urgency=medium
 
   * Fix missing command stub file in /usr/share/zsnapd
