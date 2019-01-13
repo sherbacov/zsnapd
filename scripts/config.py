@@ -37,7 +37,7 @@ from scripts.clean import CLEANER_REGEX
 
 ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
 ds_name_reserved_regex = r'^(log|DEFAULT|(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*)$'
-dsg_name_syntax = r'^[a-zA-Z0-9][-_:.a-zA-Z0-9]*$'
+template_name_syntax = r'^[a-zA-Z0-9][-_:.a-zA-Z0-9]*$'
 BOOLEAN_REGEX = r'^([tT]rue|[fF]alse|[oO]n|[oO]ff|0|1)$'
 PATH_REGEX = r'[-_./~a-zA-Z0-9]+'
 SHELLCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]+$'
@@ -64,7 +64,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_use_sudo': BOOLEAN_REGEX,
         'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
-        'dataset_group': dsg_name_syntax,
+        'template': template_name_syntax,
         }
 DEFAULT_ENDPOINT_PORT = 22
 DEFAULT_ENDPOINT_USER = 'root'
@@ -97,20 +97,20 @@ class Config(object):
         return result
     
     @staticmethod
-    def _check_dsg_syntax(dsg_config):
+    def _check_template_syntax(template_config):
         """
-        Checks the syntax of the dataset_group file
+        Checks the syntax of the template file
         """
         result = True
         # Check syntax of DEFAULT section
-        if not Config._check_section_syntax(dsg_config.defaults(), 'DEFAULT'):
+        if not Config._check_section_syntax(template_config.defaults(), 'DEFAULT'):
             result = False
-        for dsg in dsg_config.sections():
+        for dsg in template_config.sections():
             # Check name syntax of each dataset group
-            if not re.match(dsg_name_syntax, dsg):
+            if not re.match(template_name_syntax, dsg):
                 result = False
             # Check syntax of each dataset group 
-            if not Config._check_section_syntax(dsg_config[dsg], dsg):
+            if not Config._check_section_syntax(template_config[dsg], dsg):
                 result = False
         return result
 
@@ -140,16 +140,16 @@ class Config(object):
         """
         ds_settings = {}
         ds_dict = {}
-        dsg_dict = {}
+        template_dict = {}
         try:
             
-            dsg_filename = settings['dataset_group_config_file']
-            dsg_file = open(dsg_filename)
-            dsg_config = configparser.ConfigParser()
-            dsg_config.read_file(dsg_file)
-            dsg_file.close()
-            if not Config._check_dsg_syntax(dsg_config):
-                raise MagCodeConfigError("Invalid dataset syntax in config file '{0}'".format(dsg_filename))
+            template_filename = settings['template_config_file']
+            template_file = open(template_filename)
+            template_config = configparser.ConfigParser()
+            template_config.read_file(template_file)
+            template_file.close()
+            if not Config._check_template_syntax(template_config):
+                raise MagCodeConfigError("Invalid dataset syntax in config file '{0}'".format(template_filename))
 
             def get_sect_dict(config, section):
                 res_dict = {}
@@ -160,7 +160,7 @@ class Config(object):
                         res_dict[item] = config.get(section, item)
                 return res_dict
 
-            dsg_dict = {dsg_section:get_sect_dict(dsg_config, dsg_section) for dsg_section in dsg_config.sections()}
+            template_dict = {template_section:get_sect_dict(template_config, template_section) for template_section in template_config.sections()}
             
             ds_filename = settings['dataset_config_file']
             ds_file = open(ds_filename)
@@ -173,9 +173,9 @@ class Config(object):
             # Assemble default ds_dict
             ds_dict = {}
             for ds in ds_config.sections():
-                ds_group = ds_config.get(ds, 'dataset_group', fallback=None)
-                if (ds_group and ds_group in dsg_dict):
-                    ds_dict[ds] = dsg_dict.get(ds_group, None)
+                ds_group = ds_config.get(ds, 'template', fallback=None)
+                if (ds_group and ds_group in template_dict):
+                    ds_dict[ds] = template_dict.get(ds_group, None)
 
             # Destroy ds_config and re read it
             del ds_config
