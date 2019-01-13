@@ -34,6 +34,7 @@ from magcode.core.globals_ import *
 # import this to set up config file settings etc
 import scripts.globals_
 from scripts.manager import Manager
+from scripts.config import Config
 
 USAGE_MESSAGE = "Usage: %s [-hv] [-c config_file]"
 COMMAND_DESCRIPTION = "ZFS Snap Managment Daemon configuration tester"
@@ -53,6 +54,6 @@ class ZsnapdCfgtestProcess(Process):
         zsnapd-cfgtest main process
         """
         # Test configuration
-        ds_settings = Manager.read_ds_config()
+        ds_settings = Config.read_ds_config()
         sys.exit(os.EX_OK)
    

@@ -22,6 +22,9 @@ settings['syslog_facility'] = ''
 # Dataset config file
 settings['dataset_config_file'] = settings['config_dir'] \
         + '/' + 'datasets.conf'
+# Dataset group config file
+settings['dataset_group_config_file'] = settings['config_dir'] \
+        + '/' + 'dataset-groups.conf'
 # Print debug mark
 settings['debug_mark'] = False
 # Number of seconds we wait while looping in main loop...
