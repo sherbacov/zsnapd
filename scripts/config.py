@@ -57,20 +57,14 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_endpoint': NETCMD_REGEX,
         'replicate_endpoint_host': HOST_REGEX,
         'replicate_endpoint_port': PORT_REGEX,
-        'replicate_endpoint_user': USER_REGEX,
-        'replicate_endpoint_command': PATH_REGEX,
-        'replicate_endpoint_extra_args': SHELLCMD_REGEX,
-        'replicate_endpoint_template': SHELLFORMAT_REGEX,
+        'replicate_endpoint_command': SHELLFORMAT_REGEX,
         'replicate_use_sudo': BOOLEAN_REGEX,
         'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
         'template': template_name_syntax,
         }
 DEFAULT_ENDPOINT_PORT = 22
-DEFAULT_ENDPOINT_USER = 'root'
-DEFAULT_ENDPOINT_CMD = 'ssh'
-DEFAULT_ENDPOINT_TEMPLATE = '{command} {extra_args} -p {port} -l {user} {host}'
-DEFAULT_USE_SUDO = False
+DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
 
 
 class Config(object):
@@ -197,14 +191,11 @@ class Config(object):
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     if ds_config.has_option(dataset, 'replicate_endpoint_host'):
-                        template = ds_config.get(dataset, 'replicate_endpoint_template', fallback=DEFAULT_ENDPOINT_TEMPLATE)
                         command = ds_config.get(dataset, 'replicate_endpoint_command', fallback=DEFAULT_ENDPOINT_CMD)
-                        extra_args = ds_config.get(dataset, 'replicate_endpoint_extra_args', fallback='')
                         host = ds_config.get(dataset, 'replicate_endpoint_host')
                         port = ds_config.get(dataset, 'replicate_endpoint_port', fallback=DEFAULT_ENDPOINT_PORT)
-                        user = ds_config.get(dataset, 'replicate_endpoint_user', fallback=DEFAULT_ENDPOINT_USER)
                         if host:
-                            endpoint = template.format(command=command, extra_args=extra_args, port=port, user=user, host=host)
+                            endpoint = command.format(port=port, host=host)
                         else:
                             endpoint = ''
                     else:
