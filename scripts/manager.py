@@ -55,7 +55,7 @@ class Manager(object):
                 time.sleep(connect_retry_wait)
                 continue
         else:
-            log_error("Can't reach endpoint '%s:%s' - %s".format(host, port, exc_msg))
+            log_error("Can't reach endpoint '{0}:{1}' - {2}".format(host, port, exc_msg))
             return False
         return True
 
@@ -89,6 +89,7 @@ class Manager(object):
                 ds_candidates.append(trigger_mnts_dict[candidate])
 
         connected_list = []
+        unconnected_list = []
         for dataset in datasets:
             if dataset in ds_settings:
                 if (len(ds_candidates) and dataset not in ds_candidates):
@@ -106,11 +107,14 @@ class Manager(object):
                             if (replicate and replicate_param['endpoint_host']):
                                 host = replicate_param['endpoint_host']
                                 port = replicate_param['endpoint_port']
+                                if ((host, port) in unconnected_list):
+                                    continue
                                 if ((host, port) not in connected_list):
                                     if Manager._test_connected(host, port):
                                         connected_list.append((host, port))
                                         # Go and write trigger
                                     else:
+                                        unconnected_list.append((host, port))
                                         continue
                             # Trigger file testing and creation
                             trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
