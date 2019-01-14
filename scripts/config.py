@@ -190,10 +190,10 @@ class Config(object):
                                      'postexec': ds_config.get(dataset, 'postexec', fallback=None)}
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
+                    host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')
+                    port = ds_config.get(dataset, 'replicate_endpoint_port', fallback=DEFAULT_ENDPOINT_PORT)
                     if ds_config.has_option(dataset, 'replicate_endpoint_host'):
                         command = ds_config.get(dataset, 'replicate_endpoint_command', fallback=DEFAULT_ENDPOINT_CMD)
-                        host = ds_config.get(dataset, 'replicate_endpoint_host')
-                        port = ds_config.get(dataset, 'replicate_endpoint_port', fallback=DEFAULT_ENDPOINT_PORT)
                         if host:
                             endpoint = command.format(port=port, host=host)
                         else:
@@ -203,7 +203,9 @@ class Config(object):
                     ds_settings[dataset]['replicate'] = {'endpoint': endpoint,
                                                       'target': ds_config.get(dataset, 'replicate_target', fallback=None),
                                                       'source': ds_config.get(dataset, 'replicate_source', fallback=None),
-                                                      'compression': ds_config.get(dataset, 'compression', fallback=None)}
+                                                      'compression': ds_config.get(dataset, 'compression', fallback=None),
+                                                      'endpoint_host': host,
+                                                      'endpoint_port': port}
        
         # Handle file opening and read errors
         except (IOError,OSError) as e:

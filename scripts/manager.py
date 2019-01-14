@@ -30,6 +30,7 @@ from datetime import datetime
 
 from magcode.core.globals_ import *
 from magcode.core.utility import connect_test_address
+from magcode.core.utility import get_numeric_setting
 
 from scripts.zfs import ZFS
 from scripts.clean import Cleaner
@@ -39,6 +40,24 @@ class Manager(object):
     """
     Manages the ZFS snapshotting process
     """
+    
+    @staticmethod
+    def _test_connected(host, port):
+        connect_retry_wait = get_numeric_setting('connect_retry_wait', float)
+        exc_msg = ''
+        for t in range(3):
+            try:
+                # Transform any hostname to an IP address
+                connect_test_address(host, port)
+                break
+            except(IOError, OSError) as exc:
+                exc_msg = str(exc)
+                time.sleep(connect_retry_wait)
+                continue
+        else:
+            log_error("Can't reach endpoint '%s:%s' - %s".format(host, port, exc_msg))
+            return False
+        return True
 
     @staticmethod
     def touch_trigger(ds_settings, *args):
@@ -69,6 +88,7 @@ class Manager(object):
                     sys.exit(os.EX_DATAERR)
                 ds_candidates.append(trigger_mnts_dict[candidate])
 
+        connected_list = []
         for dataset in datasets:
             if dataset in ds_settings:
                 if (len(ds_candidates) and dataset not in ds_candidates):
@@ -81,6 +101,17 @@ class Manager(object):
 
                     if take_snapshot is True or replicate is True:
                         if dataset_settings['time'] == 'trigger':
+                            # Check endpoint for trigger is connected
+                            replicate_param = dataset_settings['replicate']
+                            if (replicate and replicate_param['endpoint_host']):
+                                host = replicate_param['endpoint_host']
+                                port = replicate_param['endpoint_port']
+                                if ((host, port) not in connected_list):
+                                    if Manager._test_connected(host, port):
+                                        connected_list.append((host, port))
+                                        # Go and write trigger
+                                    else:
+                                        continue
                             # Trigger file testing and creation
                             trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
                             if os.path.exists(trigger_filename):
