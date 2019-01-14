@@ -36,13 +36,15 @@ from scripts.zfs import ZFS
 from scripts.clean import Cleaner
 from scripts.helper import Helper
 
-class Manager(object):
+class IsConnected(object):
     """
-    Manages the ZFS snapshotting process
+    Test object class for caching endpoint connectivity and testing for it as well
     """
-    
-    @staticmethod
-    def _test_connected(host, port):
+    def __init__(self):
+        self.unconnected_list = []
+        self.connected_list = []
+
+    def _test_connected(self, host, port):
         connect_retry_wait = get_numeric_setting('connect_retry_wait', float)
         exc_msg = ''
         for t in range(3):
@@ -58,6 +60,30 @@ class Manager(object):
             log_error("Can't reach endpoint '{0}:{1}' - {2}".format(host, port, exc_msg))
             return False
         return True
+
+    def test_unconnected(self, dataset_settings):
+        """
+        Check that endpoint is unconnected
+        """
+        replicate_param = dataset_settings['replicate']
+        if (replicate_param and replicate_param['endpoint_host']):
+            host = replicate_param['endpoint_host']
+            port = replicate_param['endpoint_port']
+            if ((host, port) in self.unconnected_list):
+                return(True)
+            if ((host, port) not in self.connected_list):
+                if self._test_connected(host, port):
+                    self.connected_list.append((host, port))
+                    # Go and write trigger
+                else:
+                    self.unconnected_list.append((host, port))
+                    return(True)
+        return(False)
+
+class Manager(object):
+    """
+    Manages the ZFS snapshotting process
+    """
 
     @staticmethod
     def touch_trigger(ds_settings, *args):
@@ -88,8 +114,7 @@ class Manager(object):
                     sys.exit(os.EX_DATAERR)
                 ds_candidates.append(trigger_mnts_dict[candidate])
 
-        connected_list = []
-        unconnected_list = []
+        is_connected = IsConnected()
         for dataset in datasets:
             if dataset in ds_settings:
                 if (len(ds_candidates) and dataset not in ds_candidates):
@@ -103,19 +128,8 @@ class Manager(object):
                     if take_snapshot is True or replicate is True:
                         if dataset_settings['time'] == 'trigger':
                             # Check endpoint for trigger is connected
-                            replicate_param = dataset_settings['replicate']
-                            if (replicate and replicate_param['endpoint_host']):
-                                host = replicate_param['endpoint_host']
-                                port = replicate_param['endpoint_port']
-                                if ((host, port) in unconnected_list):
-                                    continue
-                                if ((host, port) not in connected_list):
-                                    if Manager._test_connected(host, port):
-                                        connected_list.append((host, port))
-                                        # Go and write trigger
-                                    else:
-                                        unconnected_list.append((host, port))
-                                        continue
+                            if is_connected.test_unconnected(dataset_settings):
+                                continue
                             # Trigger file testing and creation
                             trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
                             if os.path.exists(trigger_filename):
@@ -128,7 +142,7 @@ class Manager(object):
                             trigger_file.close()
                 except Exception as ex:
                     log_error('Exception: {0}'.format(str(ex)))
-
+        del is_connected
         return result
 
     @staticmethod
@@ -170,6 +184,7 @@ class Manager(object):
                                 execute = True
 
                     if execute is True:
+                        # If network replicating, check connectivity here
                         # Pre exectution command
                         if dataset_settings['preexec'] is not None:
                             Helper.run_command(dataset_settings['preexec'], '/')
