@@ -156,6 +156,7 @@ class Manager(object):
 
         snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()
+        is_connected = IsConnected()
         for dataset in datasets:
             if dataset in ds_settings:
                 try:
@@ -183,8 +184,11 @@ class Manager(object):
                                 log_info('Time passed for {0}'.format(dataset))
                                 execute = True
 
+                    # If network replicating, check connectivity here
+                    if (execute and is_connected.test_unconnected(dataset_settings)):
+                            execute = False
+
                     if execute is True:
-                        # If network replicating, check connectivity here
                         # Pre exectution command
                         if dataset_settings['preexec'] is not None:
                             Helper.run_command(dataset_settings['preexec'], '/')
@@ -282,4 +286,7 @@ class Manager(object):
 
                 except Exception as ex:
                     log_error('Exception: {0}'.format(str(ex)))
+
+        # Clean up
+        del is_connected
 
