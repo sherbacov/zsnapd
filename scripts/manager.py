@@ -184,16 +184,12 @@ class Manager(object):
                                 log_info('Time passed for {0}'.format(dataset))
                                 execute = True
 
-                    # If network replicating, check connectivity here
-                    if (execute and is_connected.test_unconnected(dataset_settings)):
-                            execute = False
-
                     if execute is True:
                         # Pre exectution command
                         if dataset_settings['preexec'] is not None:
                             Helper.run_command(dataset_settings['preexec'], '/')
 
-                        if take_snapshot is True:
+                        if (take_snapshot is True and today not in local_snapshots):
                             # Take today's snapshotzfs
                             log_info('Taking snapshot {0}@{1}'.format(dataset, today))
                             try:
@@ -201,12 +197,13 @@ class Manager(object):
                             except Exception as ex:
                                 # if snapshot fails move onto next one
                                 log_error('Exception: {0}'.format(str(ex)))
-                                continue
-                            local_snapshots.append(today)
-                            log_info('Taking snapshot {0}@{1} complete'.format(dataset, today))
+                            else:
+                                local_snapshots.append(today)
+                                log_info('Taking snapshot {0}@{1} complete'.format(dataset, today))
 
                         # Replicating, if required
-                        if replicate is True:
+                        # If network replicating, check connectivity here
+                        if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
                             log_info('Replicating {0}'.format(dataset))
                             replicate_settings = dataset_settings['replicate']
                             push = replicate_settings['target'] is not None
