@@ -29,7 +29,6 @@ import copy
 import signal
 import gc
 import json
-
 import psutil
 
 # A bit of nice stuff to set up ps output as much as we can...
@@ -44,10 +43,10 @@ from magcode.core.process import SignalHandler
 from magcode.core.globals_ import *
 from magcode.core.utility import get_numeric_setting
 from magcode.core.utility import get_boolean_setting
-from magcode.core.utility import libc_sleep
 # import this to set up config file settings etc
 import scripts.globals_
 from scripts.manager import Manager
+from scripts.config import Config
 
 USAGE_MESSAGE = "Usage: %s [-dhv] [-c config_file]"
 COMMAND_DESCRIPTION = "ZFS Snap Managment Daemon"
@@ -97,7 +96,7 @@ class ZsnapdProcess(ProcessDaemon):
         sleep_time = debug_sleep_time if debug() else sleep_time
 
         # Initialise Manager stuff
-        ds_settings = Manager.read_ds_config()
+        ds_settings = Config.read_ds_config()
 
         # Process Main Loop
         while (self.check_signals()):
@@ -109,7 +108,7 @@ class ZsnapdProcess(ProcessDaemon):
             
             if debug_mark:
                 log_debug("----MARK---- sleep({0}) seconds ----".format(sleep_time))
-            libc_sleep(sleep_time)
+            self.main_sleep(sleep_time)
 
         log_info('Exited main loop - process terminating normally.')
         sys.exit(os.EX_OK)

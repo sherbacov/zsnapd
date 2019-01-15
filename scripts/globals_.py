@@ -21,11 +21,15 @@ settings['syslog_facility'] = ''
 # zsnapd.py
 # Dataset config file
 settings['dataset_config_file'] = settings['config_dir'] \
-        + '/' + 'datasets.conf'
+        + '/' + 'dataset.conf'
+# Template config file
+settings['template_config_file'] = settings['config_dir'] \
+        + '/' + 'template.conf'
 # Print debug mark
 settings['debug_mark'] = False
 # Number of seconds we wait while looping in main loop...
 settings['sleep_time'] = 3 # seconds
 settings['debug_sleep_time'] = 20 # seconds
+settings['connect_retry_wait'] = 3 # seconds
 
 

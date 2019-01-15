@@ -24,37 +24,61 @@
 Provides the overall functionality
 """
 
-import configparser
 import time
 import os
-import re
 from datetime import datetime
 
 from magcode.core.globals_ import *
-from magcode.core.utility import MagCodeConfigError
+from magcode.core.utility import connect_test_address
+from magcode.core.utility import get_numeric_setting
 
 from scripts.zfs import ZFS
 from scripts.clean import Cleaner
-from scripts.clean import CLEANER_REGEX
 from scripts.helper import Helper
 
-ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
-ds_name_reserved_regex = r'^(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*$'
-BOOLEAN_REGEX = r'^([tT]rue|[fF]alse|[oO]n|[oO]ff|0|1)$'
-PATH_REGEX = r'[-_./~a-zA-Z0-9]+'
-SHELLCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]+$'
-ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
-        'replicate': BOOLEAN_REGEX,
-        'time': r'^(trigger|[0-9]{1,2}:[0-9][0-9])$',
-        'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
-        'preexec': SHELLCMD_REGEX,
-        'postexec': SHELLCMD_REGEX,
-        'replicate_target': ds_name_syntax,
-        'replicate_source': ds_name_syntax,
-        'replicate_endpoint': SHELLCMD_REGEX,
-        'compression': PATH_REGEX,
-        'schema': CLEANER_REGEX,
-        }
+class IsConnected(object):
+    """
+    Test object class for caching endpoint connectivity and testing for it as well
+    """
+    def __init__(self):
+        self.unconnected_list = []
+        self.connected_list = []
+
+    def _test_connected(self, host, port):
+        connect_retry_wait = get_numeric_setting('connect_retry_wait', float)
+        exc_msg = ''
+        for t in range(3):
+            try:
+                # Transform any hostname to an IP address
+                connect_test_address(host, port)
+                break
+            except(IOError, OSError) as exc:
+                exc_msg = str(exc)
+                time.sleep(connect_retry_wait)
+                continue
+        else:
+            log_error("Can't reach endpoint '{0}:{1}' - {2}".format(host, port, exc_msg))
+            return False
+        return True
+
+    def test_unconnected(self, dataset_settings):
+        """
+        Check that endpoint is unconnected
+        """
+        replicate_param = dataset_settings['replicate']
+        if (replicate_param and replicate_param['endpoint_host']):
+            host = replicate_param['endpoint_host']
+            port = replicate_param['endpoint_port']
+            if ((host, port) in self.unconnected_list):
+                return(True)
+            if ((host, port) not in self.connected_list):
+                if self._test_connected(host, port):
+                    self.connected_list.append((host, port))
+                    # Go and write trigger
+                else:
+                    self.unconnected_list.append((host, port))
+                    return(True)
+        return(False)
 
 class Manager(object):
     """
@@ -90,6 +114,7 @@ class Manager(object):
                     sys.exit(os.EX_DATAERR)
                 ds_candidates.append(trigger_mnts_dict[candidate])
 
+        is_connected = IsConnected()
         for dataset in datasets:
             if dataset in ds_settings:
                 if (len(ds_candidates) and dataset not in ds_candidates):
@@ -102,6 +127,9 @@ class Manager(object):
 
                     if take_snapshot is True or replicate is True:
                         if dataset_settings['time'] == 'trigger':
+                            # Check endpoint for trigger is connected
+                            if is_connected.test_unconnected(dataset_settings):
+                                continue
                             # Trigger file testing and creation
                             trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
                             if os.path.exists(trigger_filename):
@@ -114,7 +142,7 @@ class Manager(object):
                             trigger_file.close()
                 except Exception as ex:
                     log_error('Exception: {0}'.format(str(ex)))
-
+        del is_connected
         return result
 
     @staticmethod
@@ -128,6 +156,7 @@ class Manager(object):
 
         snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()
+        is_connected = IsConnected()
         for dataset in datasets:
             if dataset in ds_settings:
                 try:
@@ -160,7 +189,7 @@ class Manager(object):
                         if dataset_settings['preexec'] is not None:
                             Helper.run_command(dataset_settings['preexec'], '/')
 
-                        if take_snapshot is True:
+                        if (take_snapshot is True and today not in local_snapshots):
                             # Take today's snapshotzfs
                             log_info('Taking snapshot {0}@{1}'.format(dataset, today))
                             try:
@@ -168,12 +197,13 @@ class Manager(object):
                             except Exception as ex:
                                 # if snapshot fails move onto next one
                                 log_error('Exception: {0}'.format(str(ex)))
-                                continue
-                            local_snapshots.append(today)
-                            log_info('Taking snapshot {0}@{1} complete'.format(dataset, today))
+                            else:
+                                local_snapshots.append(today)
+                                log_info('Taking snapshot {0}@{1} complete'.format(dataset, today))
 
                         # Replicating, if required
-                        if replicate is True:
+                        # If network replicating, check connectivity here
+                        if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
                             log_info('Replicating {0}'.format(dataset))
                             replicate_settings = dataset_settings['replicate']
                             push = replicate_settings['target'] is not None
@@ -254,80 +284,6 @@ class Manager(object):
                 except Exception as ex:
                     log_error('Exception: {0}'.format(str(ex)))
 
-    @staticmethod
-    def check_dataset_syntax (config):
-        """
-        Checks the dataset syntax of read in items
-        """
-        result = True
-        for dataset in config.sections():
-            if (not re.match(ds_name_syntax, dataset)
-                    or re.match(ds_name_reserved_regex, dataset)):
-                log_error("Dataset name '{0}' is invalid.".format(dataset))
-                result = False
-            for item in config[dataset].keys():
-                try:
-                    value_syntax = ds_syntax_dict[item]
-                except AttributeError as ex:
-                    log_error("[{0}] - item '{1}' is not a valid dataset keyword.".format(dataset, item))
-                    result = False
-                if (not ds_syntax_dict[item]):
-                    continue
-                value = config[dataset][item]
-                if (not re.match(ds_syntax_dict[item], value)):
-                    log_error("[{0}] {1} - value '{2}' invalid. Must match regex '{3}'.".format(dataset, item, value, ds_syntax_dict[item]))
-                    result = False
-                if item in ('replicate_source', 'replicate_target'):
-                    if re.match(ds_name_reserved_regex, value):
-                        log_error("[{0}] {1} - value '{2}' invalid. Must not start with a ZFS reserved keyword.".format(dataset, item, value))
-                        result = False
-        return result
-
-    @staticmethod
-    def read_ds_config ():
-        """
-        Read dataset configuration
-        """
-        ds_settings = {}
-        try:
-            config = configparser.RawConfigParser()
-            config.read(settings['dataset_config_file'])
-            if not Manager.check_dataset_syntax(config):
-                raise MagCodeConfigError("Invalid dataset syntax in config file '{0}'".format(settings['dataset_config_file']))
-            for dataset in config.sections():
-                ds_settings[dataset] = {'mountpoint': config.get(dataset, 'mountpoint') \
-                                            if config.has_option(dataset, 'mountpoint') else None,
-                                     'time': config.get(dataset, 'time'),
-                                     'snapshot': config.getboolean(dataset, 'snapshot'),
-                                     'replicate': None,
-                                     'schema': config.get(dataset, 'schema'),
-                                     'preexec': config.get(dataset, 'preexec') if config.has_option(dataset, 'preexec') else None,
-                                     'postexec': config.get(dataset, 'postexec') if config.has_option(dataset, 'postexec') else None}
-                if config.has_option(dataset, 'replicate_endpoint') and (config.has_option(dataset, 'replicate_target') or
-                                                                         config.has_option(dataset, 'replicate_source')):
-                    ds_settings[dataset]['replicate'] = {'endpoint': config.get(dataset, 'replicate_endpoint'),
-                                                      'target': config.get(dataset, 'replicate_target')
-                                                      if config.has_option(dataset, 'replicate_target') else None,
-                                                      'source': config.get(dataset, 'replicate_source')
-                                                      if config.has_option(dataset, 'replicate_source') else None,
-                                                      'compression': config.get(dataset, 'compression')
-                                                      if config.has_option(dataset, 'compression') else None}
-       # Handle file opening and read errors
-        except (IOError,OSError) as e:
-            log_error('Exception while parsing configuration file: {0}'.format(str(e)))
-            if (e.errno == errno.EPERM or e.errno == errno.EACCES):
-                systemd_exit(os.EX_NOPERM, SDEX_NOPERM)
-            else:
-                systemd_exit(os.EX_IOERR, SDEX_GENERIC)
-
-        # Handle all configuration file parsing errors
-        except configparser.Error as e:
-            log_error('Exception while parsing configuration file: {0}'.format(str(e)))
-            systemd_exit(os.EX_CONFIG, SDEX_CONFIG)
-        
-        except MagCodeConfigError as e:
-            log_error(str(e))
-            systemd_exit(os.EX_CONFIG, SDEX_CONFIG)
-
-        return ds_settings
+        # Clean up
+        del is_connected
 

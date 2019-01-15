@@ -34,6 +34,7 @@ from magcode.core.globals_ import *
 # import this to set up config file settings etc
 import scripts.globals_
 from scripts.manager import Manager
+from scripts.config import Config
 
 USAGE_MESSAGE = "Usage: %s [-hv] [-c config_file]"
 COMMAND_DESCRIPTION = "ZFS Snap Daemon trigger utility"
@@ -62,7 +63,7 @@ class ZsnapdTriggerProcess(Process):
         """
         self.check_if_root()
         # Read configuration
-        ds_settings = Manager.read_ds_config()
+        ds_settings = Config.read_ds_config()
         # Process triggers
         if not(Manager.touch_trigger(ds_settings, *self.argv_left)):
             sys.exit(os.EX_CONFIG)
