@@ -30,15 +30,29 @@ except ImportError:
     setproctitle_support = False
 
 from magcode.core.process import Process
+from magcode.core.process import BooleanCmdLineArg
 from magcode.core.globals_ import *
 # import this to set up config file settings etc
 import scripts.globals_
 from scripts.manager import Manager
 from scripts.config import Config
 
-USAGE_MESSAGE = "Usage: %s [-hv] [-c config_file]"
+USAGE_MESSAGE = "Usage: %s [-hrv] [-c config_file]"
 COMMAND_DESCRIPTION = "ZFS Snap Daemon trigger utility"
 
+
+class ReachableCmdLineArg(BooleanCmdLineArg):
+    """
+    Process force command Line setting
+    """
+    def __init__(self):
+        BooleanCmdLineArg.__init__(self,
+                            short_arg='r',
+                            long_arg='reachable',
+                            help_text="Test if replication endpoint can be TCP connected to",
+                            settings_key = 'reachable_arg',
+                            settings_default_value = False,
+                            settings_set_value = True)
 
 class ZsnapdTriggerProcess(Process):
 
@@ -48,6 +62,7 @@ class ZsnapdTriggerProcess(Process):
         """
         super().__init__(usage_message=USAGE_MESSAGE,
             command_description=COMMAND_DESCRIPTION, *args, **kwargs)
+        self.cmdline_arg_list.append(ReachableCmdLineArg())
 
     def parse_argv_left(self, argv_left):
         """
@@ -65,7 +80,8 @@ class ZsnapdTriggerProcess(Process):
         # Read configuration
         ds_settings = Config.read_ds_config()
         # Process triggers
-        if not(Manager.touch_trigger(ds_settings, *self.argv_left)):
+        if not(Manager.touch_trigger(ds_settings, 
+            settings['reachable_arg'], *self.argv_left)):
             sys.exit(os.EX_CONFIG)
         sys.exit(os.EX_OK)
    
