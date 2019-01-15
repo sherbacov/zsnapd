@@ -44,7 +44,7 @@ from magcode.core.process import SignalHandler
 from magcode.core.globals_ import *
 from magcode.core.utility import get_numeric_setting
 from magcode.core.utility import get_boolean_setting
-from magcode.core.utility import libc_sleep
+from magcode.core.utility import main_sleep
 # import this to set up config file settings etc
 import scripts.globals_
 from scripts.manager import Manager
@@ -110,7 +110,7 @@ class ZsnapdProcess(ProcessDaemon):
             
             if debug_mark:
                 log_debug("----MARK---- sleep({0}) seconds ----".format(sleep_time))
-            libc_sleep(sleep_time)
+            main_sleep(sleep_time)
 
         log_info('Exited main loop - process terminating normally.')
         sys.exit(os.EX_OK)
