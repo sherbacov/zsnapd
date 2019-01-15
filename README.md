@@ -5,7 +5,7 @@ ZFS Snapshot Daemon
 
 A rework of ZFS Snapshot Manager by Kenneth Henderick <kenneth@ketronic.be>
 
-ZFS dataset configuration file /etc/zfssnapmanager.cfg should be upwards compatible with /etc/zsnapd/datasets.conf.
+ZFS dataset configuration file /etc/zfssnapmanager.cfg should be upwards compatible with /etc/zsnapd/dataset.conf.
 
 Usage
 -----
@@ -20,7 +20,7 @@ Features
 * Debug command line switch and stderr logging
 * Systemd journalctl logging.
 * Full standard Unix daemon support via py-magcode-core, with logging to syslog or logfile
-* Configuration is stored in single configuration file with the ini file format
+* Configuration is stored in configuration files with the ini file format.  There is a template file, and a dataset file.
 * Triggers the configured actions based on time or a '.trigger' file present in the dataset's mountpoint.
 * Can take snapshots (with a yyyymmdd timestamp format)
 * Can replicate snapshots to/from other nodes
@@ -86,23 +86,41 @@ Command line arguments to zsnapd are:
 Note the default configuration file is /etc/zsnapd/process.conf, and systemd native mode is via the
 --systemd switch
 
-The dataset configuration file is located in /etc/zsnapd and is called datasets.conf. It's an ini
-file containing a section per dataset/volume that needs to be managed.
+The dataset configuration file is located in /etc/zsnapd and is called dataset.conf. It's an .ini
+file containing a section per dataset/volume that needs to be managed.  There is also a template .ini
+file called template.conf in the same directory
 
 zsnapd-cfgtest tests the data set conifugration file, and zsnapd-trigger writes out .trigger files
 based on the data set configuration. It takes either the mount point of the target dataset as an argument, 
-or the full dataset name including storage pool.
+or the full dataset name including storage pool. zsnapd-trigger can optionally do a connectivity test first
+before writing out the .trigger file. The same connectivty test is done before zsnapd attempts replication, and
+it uses the replicate_endpoint_host and replicate_endpoint_port settings for the dataset. 
 
 Examples
 
+/etc/zsnapd/template.conf:
+
+    [DEFAULT]
+    replicate_endpoint_host = nas.local
+
+    [backup-local]
+    replicate_endpoint_port = 2345
+    replicate_endpoint_command = ssh -l backup -p {port} {host} sudo
+    compression = gzip
+
+    [backup-other]
+    replicate_endpoint_host = other.remote.server.org
+
+/etc/zsnapd/dataset.conf:
+    [DEFAULT]
+    time = trigger
+
     [zroot]
+    template = backup-local
     mountpoint = /
     time = 21:00
     snapshot = True
-    replicate_endpoint = ssh -p 2345 my.remote.server.org
-    replicate_target = zpool/backups/zroot
     schema = 7d3w11m5y
-    compression = gzip
 
     [zpool/data]
     mountpoint = /mnt/data
@@ -119,10 +137,10 @@ Examples
     schema = 7d3w0m0y
 
     [zpool/backups/data]
+    template = backup-other
     mountpoint = /mnt/backups/data
     time = 23:00
     snapshot = False
-    replicate_endpoint = ssh other.remote.server.org
     replicate_source = zpool/data
     schema = 7d3w11m4y
 
@@ -131,7 +149,10 @@ A summary of the different options:
 * mountpoint: Points to the location to which the dataset is mounted, None for volumes
 * time: Can be either a timestamp in 24h notation after which a snapshot needs to be taken. It can also be 'trigger' indicating that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset.
 * snapshot: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
-* replicate_endpoint: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* replicate_endpoint: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* replicate_endpoint_host: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* replicate_endpoint_port: port that has to be remotely accessed
+* replicate_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
 * replicate_target: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
 * replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
 * compression: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)

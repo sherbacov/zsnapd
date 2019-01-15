@@ -86,7 +86,7 @@ class Manager(object):
     """
 
     @staticmethod
-    def touch_trigger(ds_settings, *args):
+    def touch_trigger(ds_settings, test_reachable, *args):
         """
         Runs around creating .trigger files for datasets with time = trigger
         """
@@ -128,7 +128,7 @@ class Manager(object):
                     if take_snapshot is True or replicate is True:
                         if dataset_settings['time'] == 'trigger':
                             # Check endpoint for trigger is connected
-                            if is_connected.test_unconnected(dataset_settings):
+                            if test_reachable and is_connected.test_unconnected(dataset_settings):
                                 continue
                             # Trigger file testing and creation
                             trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
