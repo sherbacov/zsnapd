@@ -133,18 +133,29 @@ class Config(object):
         """
         Read dataset configuration
         """
+        def read_config(filename, dirname=None, default_dict=None):
+            file_ = open(filename)
+            config = configparser.ConfigParser()
+            if default_dict:
+                config.read_dict(default_dict)
+            config.read_file(file_)
+            if dirname:
+                for root, dirs, files in os.walk(dirname):
+                    file_list = [os.path.join(root, name) for name in files]
+                config.read(file_list)
+            file_.close()
+            return config
+
         ds_settings = {}
         ds_dict = {}
         template_dict = {}
         try:
-            
             template_filename = settings['template_config_file']
-            template_file = open(template_filename)
-            template_config = configparser.ConfigParser()
-            template_config.read_file(template_file)
-            template_file.close()
+            template_dirname = settings['template_config_dir']
+            template_config = read_config(template_filename, template_dirname)
             if not Config._check_template_syntax(template_config):
-                raise MagCodeConfigError("Invalid dataset syntax in config file '{0}'".format(template_filename))
+                raise MagCodeConfigError("Invalid dataset syntax in config file/dir '{0}' or '{1}'"
+                        .format(template_filename, template_dirname))
 
             def get_sect_dict(config, section):
                 res_dict = {}
@@ -158,29 +169,22 @@ class Config(object):
             template_dict = {template_section:get_sect_dict(template_config, template_section) for template_section in template_config.sections()}
             
             ds_filename = settings['dataset_config_file']
-            ds_file = open(ds_filename)
-            ds_config = configparser.ConfigParser()
-            ds_config.read_file(ds_file)
-            ds_file.close()
+            ds_dirname = settings['dataset_config_dir']
+            ds_config = read_config(ds_filename, ds_dirname)
             if not Config._check_dataset_syntax(ds_config):
-                raise MagCodeConfigError("Invalid dataset syntax in config file '{0}'".format(ds_filename))
+                raise MagCodeConfigError("Invalid dataset syntax in config file/dir '{0}' or '{1}'"
+                        .format(ds_filename, ds_dirname))
 
             # Assemble default ds_dict
             ds_dict = {}
             for ds in ds_config.sections():
-                ds_group = ds_config.get(ds, 'template', fallback=None)
-                if (ds_group and ds_group in template_dict):
-                    ds_dict[ds] = template_dict.get(ds_group, None)
+                ds_template = ds_config.get(ds, 'template', fallback=None)
+                if (ds_template and ds_template in template_dict):
+                    ds_dict[ds] = template_dict.get(ds_template, None)
 
             # Destroy ds_config and re read it
             del ds_config
-            ds_file = open(ds_filename)
-            ds_config = configparser.ConfigParser()
-            # Add dataset group defaults
-            ds_config.read_dict(ds_dict)
-            ds_config.read_file(ds_file)
-            ds_file.close()
-
+            ds_config = read_config(ds_filename, ds_dirname, ds_dict)
             for dataset in ds_config.sections():
                 ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
                                      'time': ds_config.get(dataset, 'time'),

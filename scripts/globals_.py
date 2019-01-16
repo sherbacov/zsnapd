@@ -22,9 +22,13 @@ settings['syslog_facility'] = ''
 # Dataset config file
 settings['dataset_config_file'] = settings['config_dir'] \
         + '/' + 'dataset.conf'
+settings['dataset_config_dir'] = settings['config_dir'] \
+        + '/' + 'dataset.conf.d'
 # Template config file
 settings['template_config_file'] = settings['config_dir'] \
         + '/' + 'template.conf'
+settings['template_config_dir'] = settings['config_dir'] \
+        + '/' + 'template.conf.d'
 # Print debug mark
 settings['debug_mark'] = False
 # Number of seconds we wait while looping in main loop...
