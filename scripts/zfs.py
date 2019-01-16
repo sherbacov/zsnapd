@@ -40,15 +40,14 @@ class ZFS(object):
         """
 
         if endpoint == '':
-            command = 'zfs list -H -s creation -t snapshot{0}{1}{2} || true'
+            command = 'zfs list -H -s creation -t snapshot{0}{1} || true'
         else:
-            command = '{0} \'zfs list -H -s creation -t snapshot{1}{2} || true\''
+            command = '{0} \'zfs list -H -s creation -t snapshot{1} || true\''
         if dataset == '':
             dataset_filter = ''
         else:
             dataset_filter = ' | grep {0}@'.format(dataset)
-        date_filter = ' | grep -E "^.*\@[0-9]{4}[0-1][0-9][0-3][0-9]\s"'
-        output = Helper.run_command(command.format(endpoint, dataset_filter, date_filter), '/')
+        output = Helper.run_command(command.format(endpoint, dataset_filter), '/')
         snapshots = {}
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
