@@ -52,6 +52,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
         'preexec': SHELLCMD_REGEX,
         'postexec': SHELLCMD_REGEX,
+        'replicate_postexec': SHELLCMD_REGEX,
         'replicate_target': ds_name_syntax,
         'replicate_source': ds_name_syntax,
         'replicate_endpoint': NETCMD_REGEX,
@@ -187,7 +188,8 @@ class Config(object):
                                      'replicate': None,
                                      'schema': ds_config.get(dataset, 'schema'),
                                      'preexec': ds_config.get(dataset, 'preexec', fallback=None),
-                                     'postexec': ds_config.get(dataset, 'postexec', fallback=None)}
+                                     'postexec': ds_config.get(dataset, 'postexec', fallback=None),
+                                     'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None)}
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')
