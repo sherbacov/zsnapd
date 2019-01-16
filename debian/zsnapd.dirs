@@ -1,1 +1,3 @@
 /var/log/zsnapd
+/etc/zsnapd/dataset.conf.d
+/etc/zsnapd/template.conf.d
