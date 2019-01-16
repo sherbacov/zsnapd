@@ -201,6 +201,10 @@ class Manager(object):
                                 local_snapshots.append(today)
                                 log_info('Taking snapshot {0}@{1} complete'.format(dataset, today))
 
+                                # Execute postexec command
+                                if dataset_settings['postexec'] is not None:
+                                    Helper.run_command(dataset_settings['postexec'], '/')
+
                         # Replicating, if required
                         # If network replicating, check connectivity here
                         if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
@@ -273,9 +277,9 @@ class Manager(object):
                                     ZFS.hold(remote_dataset, snapshot, replicate_settings['endpoint'])
                             log_info('Replicating {0} complete'.format(dataset))
 
-                        # Post execution command
-                        if dataset_settings['postexec'] is not None:
-                            Helper.run_command(dataset_settings['postexec'], '/')
+                            # Post execution command
+                            if dataset_settings['replicate_postexec'] is not None:
+                                Helper.run_command(dataset_settings['replicate_postexec'], '/')
 
                     # Cleaning the snapshots (cleaning is mandatory)
                     if today in local_snapshots:
