@@ -100,12 +100,13 @@ class Config(object):
         # Check syntax of DEFAULT section
         if not Config._check_section_syntax(template_config.defaults(), 'DEFAULT'):
             result = False
-        for dsg in template_config.sections():
+        for template in template_config.sections():
             # Check name syntax of each dataset group
-            if not re.match(template_name_syntax, dsg):
+            if not re.match(template_name_syntax, template):
+                log_error("Template name '{0}' is invalid.".format(template))
                 result = False
             # Check syntax of each dataset group 
-            if not Config._check_section_syntax(template_config[dsg], dsg):
+            if not Config._check_section_syntax(template_config[template], template):
                 result = False
         return result
 
