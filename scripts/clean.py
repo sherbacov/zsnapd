@@ -61,9 +61,13 @@ class Cleaner(object):
                 if ZFS.is_held(dataset, snapshot):
                     held_snapshots.append(snapshot)
                     continue
+                if (len(snapshot) > 8):
+                    snapshot_date = datetime.strptime(snapshot, '%Y%m%d%H%M')
+                else:
+                    snapshot_date = datetime.strptime(snapshot, '%Y%m%d')
                 snapshot_dict.append({'name': snapshot,
-                                      'time': datetime.strptime(snapshot, '%Y%m%d'),
-                                      'age': int((today - datetime.strptime(snapshot, '%Y%m%d')).total_seconds()/3600)})
+                                      'time': snapshot_date,
+                                      'age': int((today - snapshot_date).total_seconds()/3600)})
         buckets = {}
         counter = -1
         for i in range(settings['hours']):
