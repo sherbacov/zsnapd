@@ -30,7 +30,7 @@ from magcode.core.globals_ import log_info
 
 from scripts.zfs import ZFS
 
-CLEANER_REGEX = r'^(?P<days>[0-9]+)d(?P<weeks>[0-9]+)w(?P<months>[0-9]+)m(?P<years>[0-9]+)y$'
+CLEANER_REGEX = r'^((?P<hours>[0-9]+)h){0,1}(?P<days>[0-9]+)d(?P<weeks>[0-9]+)w(?P<months>[0-9]+)m(?P<years>[0-9]+)y$'
 
 class Cleaner(object):
     """
@@ -51,33 +51,35 @@ class Cleaner(object):
         matchinfo = match.groupdict()
         settings = {}
         for key in list(matchinfo.keys()):
-            settings[key] = int(matchinfo[key])
+            settings[key] = int(matchinfo[key] if matchinfo[key] is not None else 0)
 
         # Loading snapshots
         snapshot_dict = []
         held_snapshots = []
         for snapshot in snapshots:
-            if re.match('^(\d{4})(1[0-2]|0[1-9])(0[1-9]|[1-2]\d|3[0-1])$', snapshot) is not None:
+            if re.match('^(\d{4})(1[0-2]|0[1-9])(0[1-9]|[1-2]\d|3[0-1])(([0-1][0-9]|2[0-3])([0-5][0-9])){0,1}$', snapshot) is not None:
                 if ZFS.is_held(dataset, snapshot):
                     held_snapshots.append(snapshot)
                     continue
                 snapshot_dict.append({'name': snapshot,
                                       'time': datetime.strptime(snapshot, '%Y%m%d'),
-                                      'age': (today - datetime.strptime(snapshot, '%Y%m%d')).days})
-
+                                      'age': int((today - datetime.strptime(snapshot, '%Y%m%d')).total_seconds()/3600)})
         buckets = {}
         counter = -1
-        for i in range(settings['days']):
+        for i in range(settings['hours']):
             counter += 1
             buckets[counter] = []
+        for i in range(settings['days']):
+            counter += (1 * 24)
+            buckets[counter] = []
         for i in range(settings['weeks']):
-            counter += 7
+            counter += (7 * 24)
             buckets[counter] = []
         for i in range(settings['months']):
-            counter += 28
+            counter += (30 * 24)
             buckets[counter] = []
         for i in range(settings['years']):
-            counter += (28 * 12)
+            counter += (30 * 12 * 24)
             buckets[counter] = []
 
         will_delete = False
