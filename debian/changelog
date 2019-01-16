@@ -1,3 +1,24 @@
+zsnapd (0.5.1-1~0mag0) unstable; urgency=medium
+
+  * Update package documents list to include TODO
+  * Prevent dh_auto_build from running, not needed.
+  * Add missing mbuffer and sudo to Recommends
+  * Add dataset templates, rename config files from plurals,
+    replicate_endpoint settings for connection testing
+  * Add snapshot filter for only zsnapd snaps.
+  * Add optional trigger endpoint connection testing
+  * Don't try unconnected trigger endpoints again
+  * Independent snapshotting and replications
+  * zsnapd-trigger - Network test only if -r given
+  * Caching connectivity test for code clarity/reuse. Uses cached connectivity
+    testing for going ahead with replication or optionally .trigger creation
+  * Add IPv6 address characters to host regex
+  * Convert to magcode.core self.main_sleep() from time.sleep()
+  * Move to python3-magcode-core v1.5.2
+  * Documentation and configuration updates
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 16 Jan 2019 12:56:30 +1300
+
 zsnapd (0.4.2-1~0mag0) unstable; urgency=medium
 
   * Update debian/control for py-magcode-core version
