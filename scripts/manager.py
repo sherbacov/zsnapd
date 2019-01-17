@@ -152,7 +152,7 @@ class Manager(object):
         """
 
         now = datetime.now()
-        today = '{0:04d}{1:02d}{2:02d}'.format(now.year, now.month, now.day)
+        this_time = '{0:04d}{1:02d}{2:02d}{3.02d}'.format(now.year, now.month, now.day, now.hour)
 
         snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()
@@ -180,7 +180,7 @@ class Manager(object):
                             trigger_time = dataset_settings['time'].split(':')
                             hour = int(trigger_time[0])
                             minutes = int(trigger_time[1])
-                            if (now.hour > hour or (now.hour == hour and now.minute >= minutes)) and today not in local_snapshots:
+                            if (now.hour > hour or (now.hour == hour and now.minute >= minutes)) and this_time not in local_snapshots:
                                 log_info('Time passed for {0}'.format(dataset))
                                 execute = True
 
@@ -189,17 +189,17 @@ class Manager(object):
                         if dataset_settings['preexec'] is not None:
                             Helper.run_command(dataset_settings['preexec'], '/')
 
-                        if (take_snapshot is True and today not in local_snapshots):
-                            # Take today's snapshotzfs
-                            log_info('Taking snapshot {0}@{1}'.format(dataset, today))
+                        if (take_snapshot is True and this_time not in local_snapshots):
+                            # Take this_time's snapshotzfs
+                            log_info('Taking snapshot {0}@{1}'.format(dataset, this_time))
                             try:
-                                ZFS.snapshot(dataset, today)
+                                ZFS.snapshot(dataset, this_time)
                             except Exception as ex:
                                 # if snapshot fails move onto next one
                                 log_error('Exception: {0}'.format(str(ex)))
                             else:
-                                local_snapshots.append(today)
-                                log_info('Taking snapshot {0}@{1} complete'.format(dataset, today))
+                                local_snapshots.append(this_time)
+                                log_info('Taking snapshot {0}@{1} complete'.format(dataset, this_time))
 
                                 # Execute postexec command
                                 if dataset_settings['postexec'] is not None:
@@ -282,7 +282,7 @@ class Manager(object):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/')
 
                     # Cleaning the snapshots (cleaning is mandatory)
-                    if today in local_snapshots:
+                    if this_time in local_snapshots:
                         Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
                 except Exception as ex:
