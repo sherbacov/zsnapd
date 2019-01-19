@@ -40,7 +40,7 @@ class Cleaner(object):
     logger = None  # The manager will fill this object
 
     @staticmethod
-    def clean(dataset, snapshots, schema, all_snapshots=True):
+    def clean(dataset, snapshots, schema, all_snapshots=False):
         now_time = datetime.now()
 
         # Parsing schema
@@ -51,8 +51,11 @@ class Cleaner(object):
         matchinfo = match.groupdict()
         settings = {}
         for key in list(matchinfo.keys()):
-            # Only hours can be none, everything else must be present
-            settings[key] = int(matchinfo[key] if matchinfo[key] is not None else 1)
+            # if hours not present, default it to 1 to keep old config working
+            if (key == 'hours' and matchinfo[key] == None):
+                    settings['hours'] = 1
+                    continue
+            settings[key] = int(matchinfo[key] if matchinfo[key] is not None else 0)
 
         # Loading snapshots
         snapshot_dict = []
