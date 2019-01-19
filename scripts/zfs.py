@@ -23,6 +23,9 @@
 Provides basic ZFS functionality
 """
 
+import time
+from collections import OrderedDict
+
 from magcode.core.globals_ import log_debug, log_info, log_error
 
 from scripts.helper import Helper
@@ -40,9 +43,9 @@ class ZFS(object):
         """
 
         if endpoint == '':
-            command = 'zfs list -H -s creation -t snapshot{0}{1} || true'
+            command = 'zfs list -pH -s creation -o name,creation -t snapshot{0}{1} || true'
         else:
-            command = '{0} \'zfs list -H -s creation -t snapshot{1} || true\''
+            command = '{0} \'zfs list -pH -s creation -o name,creation -t snapshot{1} || true\''
         if dataset == '':
             dataset_filter = ''
         else:
@@ -52,9 +55,12 @@ class ZFS(object):
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
             datasetname = parts[0].split('@')[0]
+            creation = int(parts[1])
+            snapshot = time.strftime("%Y%m%d", time.localtime(creation))
             if datasetname not in snapshots:
-                snapshots[datasetname] = []
-            snapshots[datasetname].append(parts[0].split('@')[1])
+                snapshots[datasetname] = OrderedDict()
+            #snapshots[datasetname].append(parts[0].split('@')[1])
+            snapshots[datasetname].update({snapshot:{'name':parts[0].split('@')[1], 'creation': creation}})
         return snapshots
 
     @staticmethod

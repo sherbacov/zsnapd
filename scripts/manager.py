@@ -27,6 +27,7 @@ Provides the overall functionality
 import time
 import os
 from datetime import datetime
+from collections import OrderedDict
 
 from magcode.core.globals_ import *
 from magcode.core.utility import connect_test_address
@@ -150,9 +151,10 @@ class Manager(object):
         """
         Executes a single run where certain datasets might or might not be snapshotted
         """
-
+ 
         now = datetime.now()
-        this_time = '{0:04d}{1:02d}{2:02d}{3.02d}{4.02d}'.format(now.year, now.month, now.day, now.hour, now.minute)
+        #this_time = '{0:04d}{1:02d}{2:02d}{3:02d}{4:02d}'.format(now.year, now.month, now.day, now.hour, now.minute)
+        this_time = '{0:04d}{1:02d}{2:02d}'.format(now.year, now.month, now.day)
 
         snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()
@@ -161,7 +163,7 @@ class Manager(object):
             if dataset in ds_settings:
                 try:
                     dataset_settings = ds_settings[dataset]
-                    local_snapshots = snapshots.get(dataset, [])
+                    local_snapshots = snapshots.get(dataset, OrderedDict())
 
                     take_snapshot = dataset_settings['snapshot'] is True
                     replicate = dataset_settings['replicate'] is not None
@@ -259,7 +261,7 @@ class Manager(object):
                                 # No common snapshot
                                 if remote_dataset not in remote_snapshots:
                                     # No remote snapshot, full replication
-                                    snapshot = local_snapshots[-1]
+                                    snapshot = list(local_snapshots)[-1]
                                     size = ZFS.get_size(dataset, None, snapshot)
                                     log_info('  {0}@         > {0}@{1} ({2})'.format(dataset, snapshot, size))
                                     ZFS.replicate(dataset, None, snapshot, remote_dataset, replicate_settings['endpoint'], direction='push', compression=replicate_settings['compression'])
@@ -269,7 +271,7 @@ class Manager(object):
                                 # No common snapshot
                                 if len(local_snapshots) == 0:
                                     # No local snapshot, full replication
-                                    snapshot = remote_snapshots[remote_dataset][-1]
+                                    snapshot = list(remote_snapshots[remote_dataset])[-1]
                                     size = ZFS.get_size(remote_dataset, None, snapshot, replicate_settings['endpoint'])
                                     log_info('  {0}@         > {0}@{1} ({2})'.format(remote_dataset, snapshot, size))
                                     ZFS.replicate(remote_dataset, None, snapshot, dataset, replicate_settings['endpoint'], direction='pull', compression=replicate_settings['compression'])
