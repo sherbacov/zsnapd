@@ -40,7 +40,7 @@ class Cleaner(object):
     logger = None  # The manager will fill this object
 
     @staticmethod
-    def clean(dataset, snapshots, schema):
+    def clean(dataset, snapshots, schema, all_snapshots=True):
         now_time = datetime.now()
 
         # Parsing schema
@@ -58,6 +58,9 @@ class Cleaner(object):
         held_snapshots = []
         for snapshot in snapshots:
             snapshotname = snapshots[snapshot]['name']
+            if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
+                # If required, only clean zsnapd snapshots
+                continue
             if ZFS.is_held(dataset, snapshotname):
                 held_snapshots.append(snapshot)
                 continue
