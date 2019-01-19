@@ -24,10 +24,12 @@ Provides basic ZFS functionality
 """
 
 import time
+import re
 from collections import OrderedDict
 
 from magcode.core.globals_ import log_debug, log_info, log_error
 
+from scripts.globals_ import SNAPSHOTNAME_REGEX
 from scripts.helper import Helper
 
 
@@ -37,7 +39,7 @@ class ZFS(object):
     """
 
     @staticmethod
-    def get_snapshots(dataset='', endpoint=''):
+    def get_snapshots(dataset='', endpoint='', all_snapshots=True):
         """
         Retreives a list of snapshots
         """
@@ -49,7 +51,7 @@ class ZFS(object):
         if dataset == '':
             dataset_filter = ''
         else:
-            dataset_filter = ' | grep {0}@'.format(dataset)
+            dataset_filter = ' | grep ^{0}@'.format(dataset)
         output = Helper.run_command(command.format(endpoint, dataset_filter), '/')
         snapshots = {}
         for line in filter(len, output.split('\n')):
@@ -57,10 +59,13 @@ class ZFS(object):
             datasetname = parts[0].split('@')[0]
             creation = int(parts[1])
             snapshot = time.strftime("%Y%m%d", time.localtime(creation))
+            snapshotname = parts[0].split('@')[1]
+            if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
+                # If required, only read in zsnapd snapshots
+                continue
             if datasetname not in snapshots:
                 snapshots[datasetname] = OrderedDict()
-            #snapshots[datasetname].append(parts[0].split('@')[1])
-            snapshots[datasetname].update({snapshot:{'name':parts[0].split('@')[1], 'creation': creation}})
+            snapshots[datasetname].update({snapshot:{'name': snapshotname, 'creation': creation}})
         return snapshots
 
     @staticmethod

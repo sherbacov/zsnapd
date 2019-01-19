@@ -29,8 +29,8 @@ from datetime import datetime
 from magcode.core.globals_ import log_info
 
 from scripts.zfs import ZFS
-
-CLEANER_REGEX = r'^((?P<hours>[0-9]+)h){0,1}(?P<days>[0-9]+)d(?P<weeks>[0-9]+)w(?P<months>[0-9]+)m(?P<years>[0-9]+)y$'
+from scripts.globals_ import CLEANER_REGEX
+from scripts.globals_ import SNAPSHOTNAME_REGEX
 
 class Cleaner(object):
     """
@@ -57,17 +57,14 @@ class Cleaner(object):
         snapshot_dict = []
         held_snapshots = []
         for snapshot in snapshots:
-            if re.match('^(\d{4})(1[0-2]|0[1-9])(0[1-9]|[1-2]\d|3[0-1])(([0-1]\d|2[0-3])([0-5]\d)){0,1}$', snapshot) is not None:
-                if ZFS.is_held(dataset, snapshot):
-                    held_snapshots.append(snapshot)
-                    continue
-                if (len(snapshot) > 8):
-                    snapshot_date = datetime.strptime(snapshot, '%Y%m%d%H%M')
-                else:
-                    snapshot_date = datetime.strptime(snapshot, '%Y%m%d')
-                snapshot_dict.append({'name': snapshot,
-                                      'time': snapshot_date,
-                                      'age': int((now_time - snapshot_date).total_seconds()/3600)})
+            snapshotname = snapshots[snapshot]['name']
+            if ZFS.is_held(dataset, snapshotname):
+                held_snapshots.append(snapshot)
+                continue
+            snapshot_ctime = datetime.fromtimestamp(snapshots[snapshot]['creation'])
+            snapshot_dict.append({'name': snapshotname,
+                                  'time': snapshot_ctime,
+                                  'age': int((now_time - snapshot_ctime).total_seconds()/3600)})
         buckets = {}
         counter = -1
         for i in range(settings['hours']):
