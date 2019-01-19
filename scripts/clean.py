@@ -57,12 +57,12 @@ class Cleaner(object):
         snapshot_dict = []
         held_snapshots = []
         for snapshot in snapshots:
-            if re.match('^(\d{4})(1[0-2]|0[1-9])(0[1-9]|[1-2]\d|3[0-1])([0-1][0-9]|2[0-3]){0,1}$', snapshot) is not None:
+            if re.match('^(\d{4})(1[0-2]|0[1-9])(0[1-9]|[1-2]\d|3[0-1])(([0-1]\d|2[0-3])([0-5]\d)){0,1}$', snapshot) is not None:
                 if ZFS.is_held(dataset, snapshot):
                     held_snapshots.append(snapshot)
                     continue
                 if (len(snapshot) > 8):
-                    snapshot_date = datetime.strptime(snapshot, '%Y%m%d%H')
+                    snapshot_date = datetime.strptime(snapshot, '%Y%m%d%H%M')
                 else:
                     snapshot_date = datetime.strptime(snapshot, '%Y%m%d')
                 snapshot_dict.append({'name': snapshot,
