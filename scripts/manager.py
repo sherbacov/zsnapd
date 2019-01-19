@@ -26,6 +26,7 @@ Provides the overall functionality
 
 import time
 import os
+import re
 from datetime import datetime
 from collections import OrderedDict
 
@@ -36,6 +37,7 @@ from magcode.core.utility import get_numeric_setting
 from scripts.zfs import ZFS
 from scripts.clean import Cleaner
 from scripts.helper import Helper
+from scripts.config import MeterTime
 
 class IsConnected(object):
     """
@@ -147,11 +149,12 @@ class Manager(object):
         return result
 
     @staticmethod
-    def run(ds_settings):
+    def run(ds_settings, sleep_time):
         """
         Executes a single run where certain datasets might or might not be snapshotted
         """
 
+        meter_time = MeterTime(sleep_time)
         now = datetime.now()
         this_time = '{0:04d}{1:02d}{2:02d}{3:02d}{4:02d}'.format(now.year, now.month, now.day, now.hour, now.minute)
         #this_time = '{0:04d}{1:02d}{2:02d}'.format(now.year, now.month, now.day)
@@ -180,15 +183,10 @@ class Manager(object):
                                 continue
 
                         else:
-                            continue
-                            trigger_time = dataset_settings['time'].split(':')
-                            hour = int(trigger_time[0])
-                            minutes = int(trigger_time[1])
-                            if (now.hour > hour or (now.hour == hour and now.minute >= minutes)) and this_time not in local_snapshots:
-                                log_info('Time passed for {0}'.format(dataset))
-                            else:
+                            if not meter_time.has_time_passed(dataset_settings['time'], now):
                                 continue
-
+                            log_info('Time passed for {0}'.format(dataset))
+                           
                     # Pre exectution command
                     if dataset_settings['preexec'] is not None:
                         Helper.run_command(dataset_settings['preexec'], '/')

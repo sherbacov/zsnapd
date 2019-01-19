@@ -102,7 +102,7 @@ class ZsnapdProcess(ProcessDaemon):
         while (self.check_signals()):
             
             try:
-                Manager.run(ds_settings)
+                Manager.run(ds_settings, sleep_time)
             except Exception as ex:
                 log_error('Exception: {0}'.format(str(ex)))
             

@@ -28,12 +28,21 @@ import os
 import sys
 import re
 import errno
+import time
 import configparser
 
 from magcode.core.globals_ import *
 from magcode.core.utility import MagCodeConfigError
 
 from scripts.clean import CLEANER_REGEX
+
+TMP_HRMIN_REGEX = r'([0-1]*\d|2[0-3]):([0-5]\d)'
+TM_HRMIN_REGEX = r'^' + TMP_HRMIN_REGEX + r'$'
+TMP_HRMINCOMMA_REGEX = r'(' + TMP_HRMIN_REGEX + r'\s*,\s*){1,}' + TMP_HRMIN_REGEX
+TM_HRMINCOMMA_REGEX  = r'^' + TMP_HRMINCOMMA_REGEX + r'$'
+
+#TIME_REGEX = r'^trigger|' + TMP_HRMIN_REGEX + '|' + TMP_HRMINCOMMA_REGEX + r'$'
+TIME_REGEX = TM_HRMINCOMMA_REGEX
 
 ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
 ds_name_reserved_regex = r'^(log|DEFAULT|(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*)$'
@@ -48,7 +57,7 @@ PORT_REGEX = r'^[0-9]{1,5}$'
 USER_REGEX = r'^[a-zA-Z][-_.a-zA-Z0-9]*$'
 ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate': BOOLEAN_REGEX,
-        'time': r'^(trigger|[0-9]{1,2}:[0-9][0-9])$',
+        'time': TIME_REGEX,
         'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
         'preexec': SHELLCMD_REGEX,
         'postexec': SHELLCMD_REGEX,
@@ -67,6 +76,22 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
 DEFAULT_ENDPOINT_PORT = 22
 DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
 
+def _check_time_syntax(section_name, item, time_spec):
+    """
+    Function called to check time spec syntax
+    """
+    if (time_spec.find(',') > -1):
+        if(re.match(TM_HRMINCOMMA_REGEX, time_spec) is None):
+            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, ...'.".format(section_name, item, time_spec))
+            return False
+        return True
+    if re.match(TM_HRMIN_REGEX, time_spec) is None and time_spec != 'trigger':
+        log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM' or 'trigger'.".format(section_name, item, time_spec))
+        return False
+    return True
+
+ds_syntax_dict['time'] = _check_time_syntax
+
 
 class Config(object):
     @staticmethod
@@ -82,6 +107,10 @@ class Config(object):
             if (not ds_syntax_dict[item]):
                 continue
             value = section[item]
+            if type(ds_syntax_dict[item]) == type(_check_time_syntax):
+                if not ds_syntax_dict[item](section_name, item, value):
+                    result = False
+                continue
             if (not re.match(ds_syntax_dict[item], value)):
                 log_error("[{0}] {1} - value '{2}' invalid. Must match regex '{3}'.".format(section_name, item, value, ds_syntax_dict[item]))
                 result = False
@@ -232,4 +261,51 @@ class Config(object):
             systemd_exit(os.EX_CONFIG, SDEX_CONFIG)
 
         return ds_settings
+
+class MeterTime(object):
+    """
+    Manages the passing of time on a daily cycle, and the parsing of 
+    time strings for that cycle
+    """
+
+    def __init__(self, sleep_time):
+        """
+        Initialise class
+        """
+        self._prev_secs = time.time() - sleep_time
+        self._date_spec = '%Y%m%d '
+        self._date = time.strftime(self._date_spec, time.localtime())
+
+    def _parse_timespec(self, time_spec):
+        """
+        Parse a time spec
+        """
+        def parse_hrmin(time_spec):
+            return(time.mktime(time.strptime(self._date + time_spec, self._date_spec + '%H:%M',)))
+
+        time_list = []
+        if re.match(TM_HRMIN_REGEX, time_spec):
+            return [parse_hrmin(time_spec)]
+
+        if re.match(TM_HRMINCOMMA_REGEX, time_spec):
+            spec_list = time_spec.split(',')
+            spec_list = [ts.strip() for ts in spec_list]
+            time_list = [parse_hrmin(ts) for ts in spec_list]
+            time_list.sort()
+            return(time_list)
+
+        return time_list
+        
+
+    def has_time_passed(self, time_spec, now):
+        now_secs = now.timestamp()
+        prev_secs = self._prev_secs
+        time_list = self._parse_timespec(time_spec)
+        for inst in time_list:
+            if ( prev_secs < inst <= now_secs):
+                self._prev_secs = now_secs
+                return True
+        self._prev_secs = now_secs
+        return False
+
 

@@ -51,7 +51,8 @@ class Cleaner(object):
         matchinfo = match.groupdict()
         settings = {}
         for key in list(matchinfo.keys()):
-            settings[key] = int(matchinfo[key] if matchinfo[key] is not None else 0)
+            # Only hours can be none, everything else must be present
+            settings[key] = int(matchinfo[key] if matchinfo[key] is not None else 1)
 
         # Loading snapshots
         snapshot_dict = []
