@@ -298,14 +298,16 @@ class MeterTime(object):
         
 
     def has_time_passed(self, time_spec, now):
-        now_secs = now.timestamp()
+        """
+        Check if time has passed for a dataset
+        """
         prev_secs = self._prev_secs
         time_list = self._parse_timespec(time_spec)
         for inst in time_list:
-            if ( prev_secs < inst <= now_secs):
-                self._prev_secs = now_secs
+            if ( prev_secs < inst <= now):
+                self._prev_secs = now
                 return True
-        self._prev_secs = now_secs
+        self._prev_secs = now
         return False
 
 

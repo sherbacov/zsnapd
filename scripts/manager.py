@@ -38,6 +38,7 @@ from scripts.zfs import ZFS
 from scripts.clean import Cleaner
 from scripts.helper import Helper
 from scripts.config import MeterTime
+from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
 
 class IsConnected(object):
     """
@@ -155,8 +156,8 @@ class Manager(object):
         """
 
         meter_time = MeterTime(sleep_time)
-        now = datetime.now()
-        this_time = '{0:04d}{1:02d}{2:02d}{3:02d}{4:02d}'.format(now.year, now.month, now.day, now.hour, now.minute)
+        now = int(time.time())
+        this_time = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(now))
 
         snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()
@@ -199,7 +200,7 @@ class Manager(object):
                             # if snapshot fails move onto next one
                             log_error('Exception: {0}'.format(str(ex)))
                         else:
-                            local_snapshots.update({this_time:{'name': this_time, 'creation': int(now.timestamp())}})
+                            local_snapshots.update({this_time:{'name': this_time, 'creation': now}})
                             log_info('Taking snapshot {0}@{1} complete'.format(dataset, this_time))
 
                             # Execute postexec command

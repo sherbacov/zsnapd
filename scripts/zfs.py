@@ -30,6 +30,7 @@ from collections import OrderedDict
 from magcode.core.globals_ import log_debug, log_info, log_error
 
 from scripts.globals_ import SNAPSHOTNAME_REGEX
+from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
 from scripts.helper import Helper
 
 
