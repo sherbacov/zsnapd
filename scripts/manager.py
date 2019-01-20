@@ -157,7 +157,6 @@ class Manager(object):
         meter_time = MeterTime(sleep_time)
         now = datetime.now()
         this_time = '{0:04d}{1:02d}{2:02d}{3:02d}{4:02d}'.format(now.year, now.month, now.day, now.hour, now.minute)
-        #this_time = '{0:04d}{1:02d}{2:02d}'.format(now.year, now.month, now.day)
 
         snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()

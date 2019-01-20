@@ -58,7 +58,7 @@ class ZFS(object):
             parts = list(filter(len, line.split('\t')))
             datasetname = parts[0].split('@')[0]
             creation = int(parts[1])
-            snapshot = time.strftime("%Y%m%d", time.localtime(creation))
+            snapshot = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(creation))
             snapshotname = parts[0].split('@')[1]
             if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
                 # If required, only read in zsnapd snapshots

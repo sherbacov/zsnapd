@@ -24,9 +24,12 @@ Provides functionality for cleaning up old ZFS snapshots
 """
 
 import re
+import time
 from datetime import datetime
 
 from magcode.core.globals_ import log_info
+from magcode.core.globals_ import log_debug
+from magcode.core.globals_ import log_error
 
 from scripts.zfs import ZFS
 from scripts.globals_ import CLEANER_REGEX
@@ -41,7 +44,8 @@ class Cleaner(object):
 
     @staticmethod
     def clean(dataset, snapshots, schema, all_snapshots=False):
-        now_time = datetime.now()
+        now = time.localtime()
+        midnight = time.mktime(time.strptime('{0}-{1}-{2}'.format(now.tm_year, now.tm_mon, now.tm_mday) , '%Y-%m-%d'))
 
         # Parsing schema
         match = re.match(CLEANER_REGEX, schema)
@@ -51,14 +55,12 @@ class Cleaner(object):
         matchinfo = match.groupdict()
         settings = {}
         for key in list(matchinfo.keys()):
-            # if hours not present, default it to 1 to keep old config working
-            if (key == 'hours' and matchinfo[key] == None):
-                    settings['hours'] = 1
-                    continue
             settings[key] = int(matchinfo[key] if matchinfo[key] is not None else 0)
+        settings['keep'] = settings.get('keep', 0) 
+        base_time = midnight - settings['keep']*86400
 
         # Loading snapshots
-        snapshot_dict = []
+        snapshot_list = []
         held_snapshots = []
         for snapshot in snapshots:
             snapshotname = snapshots[snapshot]['name']
@@ -68,10 +70,13 @@ class Cleaner(object):
             if ZFS.is_held(dataset, snapshotname):
                 held_snapshots.append(snapshot)
                 continue
-            snapshot_ctime = datetime.fromtimestamp(snapshots[snapshot]['creation'])
-            snapshot_dict.append({'name': snapshotname,
-                                  'time': snapshot_ctime,
-                                  'age': int((now_time - snapshot_ctime).total_seconds()/3600)})
+            snapshot_ctime = snapshots[snapshot]['creation']
+            snapshot_age = (base_time - snapshot_ctime)/3600
+            snapshot_age = int(snapshot_age) if snapshot_age >= 0 else -1
+            snapshot_list.append({'name': snapshotname,
+                                  'time': datetime.fromtimestamp(snapshot_ctime),
+                                  'age': snapshot_age})
+
         buckets = {}
         counter = -1
         for i in range(settings['hours']):
@@ -91,9 +96,11 @@ class Cleaner(object):
             buckets[counter] = []
 
         will_delete = False
-
         end_of_life_snapshots = []
-        for snapshot in snapshot_dict:
+        for snapshot in snapshot_list:
+            if snapshot['age'] <= 0:
+                log_debug('  Ignoring {0}@{1} - too fresh'.format(dataset, snapshot))
+                continue
             possible_keys = []
             for key in buckets:
                 if snapshot['age'] <= key:
