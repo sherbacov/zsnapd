@@ -27,7 +27,6 @@ Provides the overall functionality
 import time
 import os
 import re
-from datetime import datetime
 from collections import OrderedDict
 
 from magcode.core.globals_ import *
