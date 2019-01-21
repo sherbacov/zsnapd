@@ -276,20 +276,21 @@ class Manager(object):
                     replicate = dataset_settings['replicate'] is not None
 
                     # Decide whether we need to handle this dataset
-                    if take_snapshot is True or replicate is True:
-                        if dataset_settings['time'] == 'trigger':
-                            # We wait until we find a trigger file in the filesystem
-                            trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
-                            if os.path.exists(trigger_filename):
-                                log_info('Trigger found on {0}'.format(dataset))
-                                os.remove(trigger_filename)
-                            else:
-                                continue
-
+                    if not take_snapshot and not replicate:
+                        continue
+                    if dataset_settings['time'] == 'trigger':
+                        # We wait until we find a trigger file in the filesystem
+                        trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
+                        if os.path.exists(trigger_filename):
+                            log_info('Trigger found on {0}'.format(dataset))
+                            os.remove(trigger_filename)
                         else:
-                            if not meter_time.has_time_passed(dataset_settings['time'], now):
-                                continue
-                            log_info('Time passed for {0}'.format(dataset))
+                            continue
+
+                    else:
+                        if not meter_time.has_time_passed(dataset_settings['time'], now):
+                            continue
+                        log_info('Time passed for {0}'.format(dataset))
 
                     # Pre exectution command
                     if dataset_settings['preexec'] is not None:
@@ -306,8 +307,7 @@ class Manager(object):
                     # Replicating, if required
                     # If network replicating, check connectivity here
                     if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
-                        replicate_settings = dataset_settings['replicate']
-                        push = replicate_settings['target'] is not None
+                        push = dataset_settings['replicate']['target'] is not None
                         if push is True:
                             Manager.replicate_push_byparts(dataset, local_snapshots, dataset_settings)
                         else:
