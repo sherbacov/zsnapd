@@ -149,6 +149,23 @@ class Manager(object):
         return result
 
     @staticmethod
+    def take_snapshot(dataset, local_snapshots, now):
+        this_time = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(now))
+        # Take this_time's snapshotzfs
+        log_info('Taking snapshot {0}@{1}'.format(dataset, this_time))
+        try:
+            ZFS.snapshot(dataset, this_time)
+        except Exception as ex:
+            # if snapshot fails move onto next one
+            log_error('Exception: {0}'.format(str(ex)))
+            return False
+        else:
+            local_snapshots.update({this_time:{'name': this_time, 'creation': now}})
+            log_info('Taking snapshot {0}@{1} complete'.format(dataset, this_time))
+            return True
+        return False
+
+    @staticmethod
     def run(ds_settings, sleep_time):
         """
         Executes a single run where certain datasets might or might not be snapshotted
@@ -185,27 +202,16 @@ class Manager(object):
                             if not meter_time.has_time_passed(dataset_settings['time'], now):
                                 continue
                             log_info('Time passed for {0}'.format(dataset))
-                           
+
                     # Pre exectution command
                     if dataset_settings['preexec'] is not None:
                         Helper.run_command(dataset_settings['preexec'], '/')
 
                     if (take_snapshot is True and this_time not in local_snapshots):
-                        # Take this_time's snapshotzfs
-                        log_info('Taking snapshot {0}@{1}'.format(dataset, this_time))
-                        try:
-                            ZFS.snapshot(dataset, this_time)
-                        except Exception as ex:
-                            # if snapshot fails move onto next one
-                            log_error('Exception: {0}'.format(str(ex)))
-                        else:
-                            local_snapshots.update({this_time:{'name': this_time, 'creation': now}})
-                            log_info('Taking snapshot {0}@{1} complete'.format(dataset, this_time))
-
+                        if Manager.take_snapshot(dataset, local_snapshots, now):
                             # Execute postexec command
                             if dataset_settings['postexec'] is not None:
                                 Helper.run_command(dataset_settings['postexec'], '/')
- 
                             # Clean snapshots if one has been taken
                             Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
