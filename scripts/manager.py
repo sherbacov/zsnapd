@@ -286,38 +286,47 @@ class Manager(object):
                             os.remove(trigger_filename)
                         else:
                             continue
-
                     else:
                         if not meter_time.has_time_passed(dataset_settings['time'], now):
                             continue
                         log_info('Time passed for {0}'.format(dataset))
 
-                    # Pre exectution command
-                    if dataset_settings['preexec'] is not None:
-                        Helper.run_command(dataset_settings['preexec'], '/')
 
-                    if (take_snapshot is True and this_time not in local_snapshots):
-                        if Manager.take_snapshot(dataset, local_snapshots, now):
-                            # Execute postexec command
-                            if dataset_settings['postexec'] is not None:
-                                Helper.run_command(dataset_settings['postexec'], '/')
-                            # Clean snapshots if one has been taken
-                            Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
+                    push = dataset_settings['replicate']['target'] is not None if replicate else True
+                    if push:
+                        # Pre exectution command
+                        if dataset_settings['preexec'] is not None:
+                            Helper.run_command(dataset_settings['preexec'], '/')
 
-                    # Replicating, if required
-                    # If network replicating, check connectivity here
-                    if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
-                        push = dataset_settings['replicate']['target'] is not None
-                        if push is True:
-                            Manager.replicate_push_byparts(dataset, local_snapshots, dataset_settings)
-                        else:
-                            if Manager.replicate_pull_byparts(dataset, local_snapshots, dataset_settings):
+                        if (take_snapshot is True and this_time not in local_snapshots):
+                            if Manager.take_snapshot(dataset, local_snapshots, now):
+                                # Execute postexec command
+                                if dataset_settings['postexec'] is not None:
+                                    Helper.run_command(dataset_settings['postexec'], '/')
                                 # Clean snapshots if one has been taken
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
-                        # Post execution command
-                        if dataset_settings['replicate_postexec'] is not None:
-                            Helper.run_command(dataset_settings['replicate_postexec'], '/')
+                        # Replicating, if required
+                        # If network replicating, check connectivity here
+                        if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
+                            Manager.replicate_push_byparts(dataset, local_snapshots, dataset_settings)
+                            # Post execution command
+                            if dataset_settings['replicate_postexec'] is not None:
+                                Helper.run_command(dataset_settings['replicate_postexec'], '/')
+                    else:
+                        # Pre exectution command
+                        if dataset_settings['preexec'] is not None:
+                            Helper.run_command(dataset_settings['preexec'], '/')
+
+                        # Replicating, if required
+                        # If network replicating, check connectivity here
+                        if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
+                            if Manager.replicate_pull_byparts(dataset, local_snapshots, dataset_settings):
+                                # Clean snapshots if one has been taken
+                                Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
+                            # Post execution command
+                            if dataset_settings['replicate_postexec'] is not None:
+                                Helper.run_command(dataset_settings['replicate_postexec'], '/')
 
                 except Exception as ex:
                     log_error('Exception: {0}'.format(str(ex)))
