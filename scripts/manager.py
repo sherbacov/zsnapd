@@ -218,18 +218,21 @@ class Manager(object):
                         remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
                         remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
                         last_common_snapshot = None
-                        if remote_dataset in remote_snapshots:
-                            if push is True:  # If pushing, we search for the last local snapshot that is remotely available
+                        if push is True:  
+                            if remote_dataset in remote_snapshots:
+                                # If pushing, we search for the last local snapshot that is remotely available
                                 for snapshot in local_snapshots:
                                     if snapshot in remote_snapshots[remote_dataset]:
                                         last_common_snapshot = snapshot
-                            else:  # Else, we search for the last remote snapshot that is locally available
+                        else: 
+                            if remote_dataset in remote_snapshots:
+                                # Else, we search for the last remote snapshot that is locally available
                                 for snapshot in remote_snapshots[remote_dataset]:
                                     if snapshot in local_snapshots:
                                         last_common_snapshot = snapshot
                         if last_common_snapshot is not None:  # There's a common snapshot
-                            previous_snapshot = None
                             if push is True:
+                                previous_snapshot = None
                                 for snapshot in local_snapshots:
                                     if snapshot == last_common_snapshot:
                                         previous_snapshot = last_common_snapshot
@@ -247,6 +250,7 @@ class Manager(object):
                                         ZFS.release(remote_dataset, prevsnap_name, replicate_settings['endpoint'])
                                         previous_snapshot = snapshot
                             else:
+                                previous_snapshot = None
                                 for snapshot in remote_snapshots[remote_dataset]:
                                     if snapshot == last_common_snapshot:
                                         previous_snapshot = last_common_snapshot
