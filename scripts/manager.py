@@ -217,20 +217,13 @@ class Manager(object):
                         push = replicate_settings['target'] is not None
                         remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
                         remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
-                        last_common_snapshot = None
                         if push is True:
+                            last_common_snapshot = None
                             if remote_dataset in remote_snapshots:
                                 # If pushing, we search for the last local snapshot that is remotely available
                                 for snapshot in local_snapshots:
                                     if snapshot in remote_snapshots[remote_dataset]:
                                         last_common_snapshot = snapshot
-                        else: 
-                            if remote_dataset in remote_snapshots:
-                                # Else, we search for the last remote snapshot that is locally available
-                                for snapshot in remote_snapshots[remote_dataset]:
-                                    if snapshot in local_snapshots:
-                                        last_common_snapshot = snapshot
-                        if push is True:
                             if last_common_snapshot is not None:  # There's a common snapshot
                                 previous_snapshot = None
                                 for snapshot in local_snapshots:
@@ -259,6 +252,12 @@ class Manager(object):
                                     ZFS.hold(dataset, snap_name)
                                     ZFS.hold(remote_dataset, snap_name, replicate_settings['endpoint'])
                         else:
+                            last_common_snapshot = None
+                            if remote_dataset in remote_snapshots:
+                                # Else, we search for the last remote snapshot that is locally available
+                                for snapshot in remote_snapshots[remote_dataset]:
+                                    if snapshot in local_snapshots:
+                                        last_common_snapshot = snapshot
                             if last_common_snapshot is not None:  # There's a common snapshot
                                 previous_snapshot = None
                                 for snapshot in remote_snapshots[remote_dataset]:
