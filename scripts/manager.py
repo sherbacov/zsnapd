@@ -39,6 +39,10 @@ from scripts.helper import Helper
 from scripts.config import MeterTime
 from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
 
+PROC_FAILURE = 0
+PROC_EXECUTED = 1
+PROC_CHANGED = 2
+
 class IsConnected(object):
     """
     Test object class for caching endpoint connectivity and testing for it as well
@@ -150,6 +154,7 @@ class Manager(object):
 
     @staticmethod
     def take_snapshot(dataset, local_snapshots, now):
+        result = PROC_EXECUTED
         this_time = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(now))
         # Take this_time's snapshotzfs
         log_info('Taking snapshot {0}@{1}'.format(dataset, this_time))
@@ -158,15 +163,16 @@ class Manager(object):
         except Exception as ex:
             # if snapshot fails move onto next one
             log_error('Exception: {0}'.format(str(ex)))
-            return False
+            return PROC_FAILURE
         else:
             local_snapshots.update({this_time:{'name': this_time, 'creation': now}})
             log_info('Taking snapshot {0}@{1} complete'.format(dataset, this_time))
-            return True
-        return False
+            result = PROC_CHANGED
+        return result
 
     @staticmethod
     def replicate_push_byparts(dataset, local_snapshots, dataset_settings):
+        result = PROC_EXECUTED
         log_info('Replicating {0}'.format(dataset))
         replicate_settings = dataset_settings['replicate']
         push = replicate_settings['target'] is not None
@@ -196,6 +202,7 @@ class Manager(object):
                     ZFS.release(dataset, prevsnap_name)
                     ZFS.release(remote_dataset, prevsnap_name, replicate_settings['endpoint'])
                     previous_snapshot = snapshot
+                    result = PROC_CHANGED
         elif len(local_snapshots) > 0 and remote_dataset not in remote_snapshots:
             # No remote snapshot, full replication
             snapshot = list(local_snapshots)[-1]
@@ -205,11 +212,13 @@ class Manager(object):
             ZFS.replicate(dataset, None, snap_name, remote_dataset, replicate_settings['endpoint'], direction='push', compression=replicate_settings['compression'])
             ZFS.hold(dataset, snap_name)
             ZFS.hold(remote_dataset, snap_name, replicate_settings['endpoint'])
+            result = PROC_CHANGED
         log_info('Replicating {0} complete'.format(dataset))
-        return True
+        return result
 
     @staticmethod
     def replicate_pull_byparts(dataset, local_snapshots, dataset_settings):
+        result = PROC_EXECUTED
         log_info('Replicating {0}'.format(dataset))
         replicate_settings = dataset_settings['replicate']
         push = replicate_settings['target'] is not None
@@ -239,6 +248,7 @@ class Manager(object):
                     ZFS.release(dataset, prevsnap_name)
                     ZFS.release(remote_dataset, prevsnap_name, replicate_settings['endpoint'])
                     previous_snapshot = snapshot
+                    result = PROC_CHANGED
         elif remote_dataset in remote_snapshots and len(remote_snapshots[remote_dataset]) > 0:
             # No common snapshot
             if len(local_snapshots) == 0:
@@ -250,8 +260,9 @@ class Manager(object):
                 ZFS.replicate(remote_dataset, None, snap_name, dataset, replicate_settings['endpoint'], direction='pull', compression=replicate_settings['compression'])
                 ZFS.hold(dataset, snap_name)
                 ZFS.hold(remote_dataset, snap_name, replicate_settings['endpoint'])
+                result = PROC_CHANGED
         log_info('Replicating {0} complete'.format(dataset))
-        return True
+        return result
 
     @staticmethod
     def run(ds_settings, sleep_time):
@@ -299,19 +310,20 @@ class Manager(object):
                             Helper.run_command(dataset_settings['preexec'], '/')
 
                         if (take_snapshot is True and this_time not in local_snapshots):
-                            if Manager.take_snapshot(dataset, local_snapshots, now):
-                                # Execute postexec command
-                                if dataset_settings['postexec'] is not None:
+                            result = Manager.take_snapshot(dataset, local_snapshots, now):
+                            # Execute postexec command
+                            if result and dataset_settings['postexec'] is not None:
                                     Helper.run_command(dataset_settings['postexec'], '/')
+                            if (result == PROC_CHANGED):
                                 # Clean snapshots if one has been taken
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
                         # Replicating, if required
                         # If network replicating, check connectivity here
                         if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
-                            Manager.replicate_push_byparts(dataset, local_snapshots, dataset_settings)
+                            result = Manager.replicate_push_byparts(dataset, local_snapshots, dataset_settings)
                             # Post execution command
-                            if dataset_settings['replicate_postexec'] is not None:
+                            if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/')
                     else:
                         # Pre exectution command
@@ -321,12 +333,13 @@ class Manager(object):
                         # Replicating, if required
                         # If network replicating, check connectivity here
                         if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
-                            if Manager.replicate_pull_byparts(dataset, local_snapshots, dataset_settings):
+                            result = Manager.replicate_pull_byparts(dataset, local_snapshots, dataset_settings)
+                            # Post execution command
+                            if (result and dataset_settings['replicate_postexec'] is not None):
+                                Helper.run_command(dataset_settings['replicate_postexec'], '/')
+                            if (result == PROC_CHANGED):
                                 # Clean snapshots if one has been taken
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
-                            # Post execution command
-                            if dataset_settings['replicate_postexec'] is not None:
-                                Helper.run_command(dataset_settings['replicate_postexec'], '/')
 
                 except Exception as ex:
                     log_error('Exception: {0}'.format(str(ex)))
