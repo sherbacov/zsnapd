@@ -34,11 +34,14 @@ class Helper(object):
     """
 
     @staticmethod
-    def run_command(command, cwd):
+    def run_command(command, cwd, endpoint=''):
         """
         Executes a command, returning the output. If the command fails, it raises
         """
-
+        if endpoint == '':
+            command = command
+        else:
+            command = "{0} '{1}'".format(endpoint, command)
         pattern = re.compile(r'[^\n\t@ a-zA-Z0-9_\\.:/\-]+')
         process = Popen(command, shell=True, cwd=cwd, stdout=PIPE, stderr=PIPE)
         out, err = process.communicate()
@@ -51,3 +54,4 @@ class Helper(object):
         if return_code != 0:
             raise RuntimeError('{0} failed with return value {1} and error message: {2}'.format(command, return_code, err))
         return re.sub(pattern, '', out)
+

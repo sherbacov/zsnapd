@@ -70,12 +70,15 @@ class ZFS(object):
         return snapshots
 
     @staticmethod
-    def get_datasets():
+    def get_datasets(endpoint=''):
         """
         Retreives all datasets
         """
-
-        output = Helper.run_command('zfs list -H', '/')
+        if endpoint == '':
+            command = 'zfs list -H'
+        else
+            command = "{0} 'zfs list -H'"
+        output = Helper.run_command(command.format(endpoint), '/')
         datasets = []
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
@@ -83,12 +86,14 @@ class ZFS(object):
         return datasets
 
     @staticmethod
-    def snapshot(dataset, name):
+    def snapshot(dataset, name, endpoint=''):
         """
         Takes a snapshot
         """
-
-        command = 'zfs snapshot {0}@{1}'.format(dataset, name)
+        if endpoint == '':
+            command = 'zfs snapshot {0}@{1}'.format(dataset, name)
+        else:
+            command = "{0} 'zfs snapshot {1}@{2}'".format(endpoint, dataset, name)
         Helper.run_command(command, '/')
 
     @staticmethod
@@ -175,10 +180,12 @@ class ZFS(object):
         return '{0}iB'.format(size)
 
     @staticmethod
-    def destroy(dataset, snapshot):
+    def destroy(dataset, snapshot, endpoint=''):
         """
         Destroyes a dataset
         """
-
-        command = 'zfs destroy {0}@{1}'.format(dataset, snapshot)
+        if endpoint == '':
+            command = 'zfs destroy {0}@{1}'.format(dataset, snapshot)
+        else:
+            command = "{0} 'zfs destroy {1}@{2}'".format(endpoint, dataset, snapshot)
         Helper.run_command(command, '/')
