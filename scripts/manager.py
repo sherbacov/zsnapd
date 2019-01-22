@@ -303,7 +303,8 @@ class Manager(object):
                         log_info('Time passed for {0}'.format(dataset))
 
 
-                    push = dataset_settings['replicate']['target'] is not None if replicate else True
+                    replicate_settings = dataset_settings['replicate']
+                    push = replicate_settings['target'] is not None if replicate else True
                     if push:
                         # Pre exectution command
                         if dataset_settings['preexec'] is not None:
@@ -320,20 +321,52 @@ class Manager(object):
 
                         # Replicating, if required
                         # If network replicating, check connectivity here
-                        if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
+                        test_unconnected = is_connected.test_unconnected(dataset_settings)
+                        if test_unconnected:
+                            log_info('[{$0}] - Skipping as '{1}:{2}' unreachable'
+                                    .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
+                            continue
+
+                        if (replicate is True):
                             result = Manager.replicate_push_byparts(dataset, local_snapshots, dataset_settings)
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/')
                     else:
-                        # Pre exectution command
-                        if dataset_settings['preexec'] is not None:
-                            Helper.run_command(dataset_settings['preexec'], '/')
-
+                        # Pull logic for remote site
                         # Replicating, if required
                         # If network replicating, check connectivity here
-                        if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
-                            result = Manager.replicate_pull_byparts(dataset, local_snapshots, dataset_settings)
+                        test_unconnected = is_connected.test_unconnected(dataset_settings)
+                        if test_unconnected:
+                            log_error('[{$0}] - Skipping as '{1}:{2}' unreachable'
+                                    .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
+                            continue
+                        
+                        remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
+                        remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
+                        if remote_dataset not in remote_snapshots:
+                            log_error('[{0}] - remote dataset '{1}' does not exist'.format(dataset, remote_dataset))
+                            continue
+                        remote_snapshots = remote_snapshots[remote_dataset]
+                        endpoint = replicate_settings['endpoint']
+                        if take_snapshot is True:
+                            # Only execute everything here if needed
+
+                            # Remote Pre exectution command
+                            if dataset_settings['preexec'] is not None:
+                                Helper.run_command(dataset_settings['preexec'], '/', endpoint=endpoint)
+
+                            # Take remote snapshot
+                            result = Manager.take_snapshot(dataset, remote_snapshots, now, endpoint=endpoint)
+                            # Execute remote postexec command
+                            if result and dataset_settings['postexec'] is not None:
+                                    Helper.run_command(dataset_settings['postexec'], '/', endpoint=endpoint)
+                            if (result == PROC_CHANGED):
+                                # Clean remote snapshots if one has been taken
+                                Cleaner.clean(dataset, remote_snapshots, dataset_settings['schema'], endpoint=endpoint)
+
+                        if (replicate is True):
+                            result = Manager.replicate_pull_byparts(dataset, remote_snapshots, dataset_settings)
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/')
