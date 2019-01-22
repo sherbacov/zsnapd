@@ -318,9 +318,6 @@ class Manager(object):
                                 # Clean snapshots if one has been taken
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
-                        if dataset == 'pool-en-gedi/var/log':
-                            breakpoint()
-                        
                         # Replicating, if required
                         # If network replicating, check connectivity here
                         if (replicate is True and not is_connected.test_unconnected(dataset_settings)):

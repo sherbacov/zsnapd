@@ -76,7 +76,7 @@ class ZFS(object):
         """
         if endpoint == '':
             command = 'zfs list -H'
-        else
+        else:
             command = "{0} 'zfs list -H'"
         output = Helper.run_command(command.format(endpoint), '/')
         datasets = []
