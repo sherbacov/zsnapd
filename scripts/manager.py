@@ -310,7 +310,7 @@ class Manager(object):
                             Helper.run_command(dataset_settings['preexec'], '/')
 
                         if (take_snapshot is True and this_time not in local_snapshots):
-                            result = Manager.take_snapshot(dataset, local_snapshots, now):
+                            result = Manager.take_snapshot(dataset, local_snapshots, now)
                             # Execute postexec command
                             if result and dataset_settings['postexec'] is not None:
                                     Helper.run_command(dataset_settings['postexec'], '/')
@@ -318,6 +318,9 @@ class Manager(object):
                                 # Clean snapshots if one has been taken
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
+                        if dataset == 'pool-en-gedi/var/log':
+                            breakpoint()
+                        
                         # Replicating, if required
                         # If network replicating, check connectivity here
                         if (replicate is True and not is_connected.test_unconnected(dataset_settings)):
