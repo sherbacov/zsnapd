@@ -1,3 +1,19 @@
+zsnapd (0.6.0-1) unstable; urgency=medium
+
+  * Remote snapshotting and cleaning/ageing
+  * Refactor code in Manager.run() in manager.py
+  * hh:mm snapshots at any time of day, new long yyyymmddhhmm names
+  * Use snapshot creation time as handle internally
+  * schema hourly clean, and keep days support
+  * Cleaning hourly snapshots - extended hr:min names
+  * Remove limiting patch - send all snapshots to far end
+  * Remove datetime functions from critical path
+  * Seperate into push/pull execution flows
+  * Configuration for managing zsnapd/all snapshots
+  * Release v0.6.0 - documentation update
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 24 Jan 2019 11:06:35 +1300
+
 zsnapd (0.5.2-1) unstable; urgency=medium
 
   * Fix postexec command and add replicate_postexec
