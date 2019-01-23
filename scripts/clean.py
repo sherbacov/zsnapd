@@ -43,14 +43,15 @@ class Cleaner(object):
     logger = None  # The manager will fill this object
 
     @staticmethod
-    def clean(dataset, snapshots, schema, endpoint='', all_snapshots=False):
+    def clean(dataset, snapshots, schema, endpoint='', local_dataset='', all_snapshots=False):
+        local_dataset = local_dataset if local_dataset else dataset
         now = time.localtime()
         midnight = time.mktime(time.strptime('{0}-{1}-{2}'.format(now.tm_year, now.tm_mon, now.tm_mday) , '%Y-%m-%d'))
 
         # Parsing schema
         match = re.match(CLEANER_REGEX, schema)
         if not match:
-            log_info('Got invalid schema for dataset {0}: {1}'.format(dataset, schema))
+            log_info('[{0}] - Got invalid schema for dataset {0}: {1}'.format(local_dataset, dataset, schema))
             return
         matchinfo = match.groupdict()
         settings = {}
@@ -99,7 +100,8 @@ class Cleaner(object):
         end_of_life_snapshots = []
         for snapshot in snapshot_list:
             if snapshot['age'] <= 0:
-                log_debug('  Ignoring {0}@{1} - too fresh'.format(dataset, snapshot))
+                log_debug('[{0}]   - Ignoring {1}@{2} - too fresh'
+                        .format(local_dataset, dataset, snapshot))
                 continue
             possible_keys = []
             for key in buckets:
@@ -132,17 +134,17 @@ class Cleaner(object):
         if will_delete is True:
             log_info('Cleaning {0}'.format(dataset))
             for snapshot in held_snapshots:
-                log_info('  Skipping held {0}@{1}'.format(dataset, snapshot))
+                log_info('[{0}] -   Skipping held {1}@{2}'.format(local_dataset, dataset, snapshot))
 
         keys = list(to_delete.keys())
         keys.sort()
         for key in keys:
             for snapshot in to_delete[key]:
-                log_info('  Destroying {0}@{1}'.format(dataset, snapshot['name']))
+                log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
                 ZFS.destroy(dataset, snapshot['name'], endpoint)
         for snapshot in end_of_life_snapshots:
-            log_info('  Destroying {0}@{1}'.format(dataset, snapshot['name']))
+            log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
             ZFS.destroy(dataset, snapshot['name'], endpoint)
 
         if will_delete is True:
-            log_info('Cleaning {0} complete'.format(dataset))
+            log_info('[{0}] - Cleaning {1} complete'.format(local_dataset, dataset))
