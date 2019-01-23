@@ -199,7 +199,7 @@ class Manager(object):
                     snap_name = src_snapshots[snapshot]['name']
                     # There is a snapshot on this host that is not yet on the other side.
                     size = ZFS.get_size(src_dataset, prevsnap_name, snap_name)
-                    log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, previous_snapshot, snapshot, size))
+                    log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                     ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                             direction=replicate_dirN, compression=replicate_settings['compression'])
                     ZFS.hold(src_dataset, snap_name)
@@ -213,7 +213,7 @@ class Manager(object):
             snapshot = list(src_snapshots)[-1]
             snap_name = src_snapshots[snapshot]['name']
             size = ZFS.get_size(src_dataset, None, snap_name)
-            log_info('  {0}@         > {0}@{1} ({2})'.format(src_dataset, snapshot, size))
+            log_info('  {0}@         > {0}@{1} ({2})'.format(src_dataset, snap_name, size))
             ZFS.replicate(src_dataset, None, snap_name, dst_dataset, replicate_settings['endpoint'],
                     direction=replicate_dirN, compression=replicate_settings['compression'])
             ZFS.hold(src_dataset, snap_name)
@@ -259,7 +259,6 @@ class Manager(object):
                         if not meter_time.has_time_passed(dataset_settings['time'], now):
                             continue
                         log_info('[{0}] - Time passed for {1}'.format(dataset, dataset))
-
 
                     replicate_settings = dataset_settings['replicate']
                     push = replicate_settings['target'] is not None if replicate else True

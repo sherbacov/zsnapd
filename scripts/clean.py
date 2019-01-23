@@ -26,6 +26,7 @@ Provides functionality for cleaning up old ZFS snapshots
 import re
 import time
 from datetime import datetime
+from collections import OrderedDict
 
 from magcode.core.globals_ import log_info
 from magcode.core.globals_ import log_debug
@@ -62,14 +63,14 @@ class Cleaner(object):
 
         # Loading snapshots
         snapshot_list = []
-        held_snapshots = []
+        held_snapshots = OrderedDict()
         for snapshot in snapshots:
             snapshotname = snapshots[snapshot]['name']
             if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
                 # If required, only clean zsnapd snapshots
                 continue
             if ZFS.is_held(dataset, snapshotname, endpoint):
-                held_snapshots.append(snapshot)
+                held_snapshots.update({snapshot:snapshots[snapshot]})
                 continue
             snapshot_ctime = snapshots[snapshot]['creation']
             snapshot_age = (base_time - snapshot_ctime)/3600
@@ -101,7 +102,7 @@ class Cleaner(object):
         for snapshot in snapshot_list:
             if snapshot['age'] <= 0:
                 log_debug('[{0}]   - Ignoring {1}@{2} - too fresh'
-                        .format(local_dataset, dataset, snapshot))
+                        .format(local_dataset, dataset, snapshot['name']))
                 continue
             possible_keys = []
             for key in buckets:
@@ -134,7 +135,7 @@ class Cleaner(object):
         if will_delete is True:
             log_info('Cleaning {0}'.format(dataset))
             for snapshot in held_snapshots:
-                log_info('[{0}] -   Skipping held {1}@{2}'.format(local_dataset, dataset, snapshot))
+                log_info('[{0}] -   Skipping held {1}@{2}'.format(local_dataset, dataset, held_snapshots[snapshot]['name']))
 
         keys = list(to_delete.keys())
         keys.sort()
