@@ -153,20 +153,21 @@ class Manager(object):
         return result
 
     @staticmethod
-    def take_snapshot(dataset, local_snapshots, now):
+    def snapshot(dataset, snapshots, now, local_dataset='', endpoint=''):
+        local_dataset = dataset if not local_dataset else local_dataset
         result = PROC_EXECUTED
         this_time = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(now))
         # Take this_time's snapshotzfs
-        log_info('Taking snapshot {0}@{1}'.format(dataset, this_time))
+        log_info('[{0}] - Taking snapshot {1}@{2}'.format(local_dataset, dataset, this_time))
         try:
-            ZFS.snapshot(dataset, this_time)
+            ZFS.snapshot(dataset, this_time, endpoint=endpoint)
         except Exception as ex:
             # if snapshot fails move onto next one
-            log_error('Exception: {0}'.format(str(ex)))
+            log_error('[{0}] - Exception: {1}'.format(local_dataset, str(ex)))
             return PROC_FAILURE
         else:
-            local_snapshots.update({this_time:{'name': this_time, 'creation': now}})
-            log_info('Taking snapshot {0}@{1} complete'.format(dataset, this_time))
+            snapshots.update({this_time:{'name': this_time, 'creation': now}})
+            log_info('[{0}] - Taking snapshot {1}@{2} complete'.format(local_dataset, dataset, this_time))
             result = PROC_CHANGED
         return result
 
@@ -311,7 +312,7 @@ class Manager(object):
                             Helper.run_command(dataset_settings['preexec'], '/')
 
                         if (take_snapshot is True and this_time not in local_snapshots):
-                            result = Manager.take_snapshot(dataset, local_snapshots, now)
+                            result = Manager.snapshot(dataset, local_snapshots, now)
                             # Execute postexec command
                             if result and dataset_settings['postexec'] is not None:
                                     Helper.run_command(dataset_settings['postexec'], '/')
@@ -357,13 +358,13 @@ class Manager(object):
                                 Helper.run_command(dataset_settings['preexec'], '/', endpoint=endpoint)
 
                             # Take remote snapshot
-                            result = Manager.take_snapshot(dataset, remote_snapshots, now, endpoint=endpoint)
+                            result = Manager.snapshot(dataset, remote_snapshots, now, endpoint=endpoint, local_dataset=dataset)
                             # Execute remote postexec command
                             if result and dataset_settings['postexec'] is not None:
                                     Helper.run_command(dataset_settings['postexec'], '/', endpoint=endpoint)
                             if (result == PROC_CHANGED):
                                 # Clean remote snapshots if one has been taken
-                                Cleaner.clean(dataset, remote_snapshots, dataset_settings['schema'], endpoint=endpoint)
+                                Cleaner.clean(dataset, remote_snapshots, dataset_settings['schema'], endpoint=endpoint, local_dataset=dataset)
 
                         if (replicate is True):
                             result = Manager.replicate_pull_byparts(dataset, remote_snapshots, dataset_settings)
