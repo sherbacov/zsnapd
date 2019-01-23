@@ -23,7 +23,7 @@
 from distutils.core import setup
 
 setup(name='zsnapd',
-    version='0.4.2',
+    version='0.6.0',
     description='ZFS Snapshot Daemon',
     author='Matthew Grant',
     author_email='matt@mattgrant.net.nz',
