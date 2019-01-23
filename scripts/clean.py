@@ -24,13 +24,17 @@ Provides functionality for cleaning up old ZFS snapshots
 """
 
 import re
+import time
 from datetime import datetime
+from collections import OrderedDict
 
 from magcode.core.globals_ import log_info
+from magcode.core.globals_ import log_debug
+from magcode.core.globals_ import log_error
 
 from scripts.zfs import ZFS
-
-CLEANER_REGEX = r'^(?P<days>[0-9]+)d(?P<weeks>[0-9]+)w(?P<months>[0-9]+)m(?P<years>[0-9]+)y$'
+from scripts.globals_ import CLEANER_REGEX
+from scripts.globals_ import SNAPSHOTNAME_REGEX
 
 class Cleaner(object):
     """
@@ -40,50 +44,67 @@ class Cleaner(object):
     logger = None  # The manager will fill this object
 
     @staticmethod
-    def clean(dataset, snapshots, schema):
-        today = datetime.now()
+    def clean(dataset, snapshots, schema, endpoint='', local_dataset='', all_snapshots=False):
+        local_dataset = local_dataset if local_dataset else dataset
+        now = time.localtime()
+        midnight = time.mktime(time.strptime('{0}-{1}-{2}'.format(now.tm_year, now.tm_mon, now.tm_mday) , '%Y-%m-%d'))
 
         # Parsing schema
         match = re.match(CLEANER_REGEX, schema)
         if not match:
-            log_info('Got invalid schema for dataset {0}: {1}'.format(dataset, schema))
+            log_info('[{0}] - Got invalid schema for dataset {0}: {1}'.format(local_dataset, dataset, schema))
             return
         matchinfo = match.groupdict()
         settings = {}
         for key in list(matchinfo.keys()):
-            settings[key] = int(matchinfo[key])
+            settings[key] = int(matchinfo[key] if matchinfo[key] is not None else 0)
+        settings['keep'] = settings.get('keep', 0) 
+        base_time = midnight - settings['keep']*86400
 
         # Loading snapshots
-        snapshot_dict = []
-        held_snapshots = []
+        snapshot_list = []
+        held_snapshots = OrderedDict()
         for snapshot in snapshots:
-            if re.match('^(\d{4})(1[0-2]|0[1-9])(0[1-9]|[1-2]\d|3[0-1])$', snapshot) is not None:
-                if ZFS.is_held(dataset, snapshot):
-                    held_snapshots.append(snapshot)
-                    continue
-                snapshot_dict.append({'name': snapshot,
-                                      'time': datetime.strptime(snapshot, '%Y%m%d'),
-                                      'age': (today - datetime.strptime(snapshot, '%Y%m%d')).days})
+            snapshotname = snapshots[snapshot]['name']
+            if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
+                # If required, only clean zsnapd snapshots
+                continue
+            if ZFS.is_held(dataset, snapshotname, endpoint):
+                held_snapshots.update({snapshot:snapshots[snapshot]})
+                continue
+            snapshot_ctime = snapshots[snapshot]['creation']
+            snapshot_age = (base_time - snapshot_ctime)/3600
+            snapshot_age = int(snapshot_age) if snapshot_age >= 0 else -1
+            snapshot_list.append({'name': snapshotname,
+                                  'handle': snapshot,
+                                  'time': datetime.fromtimestamp(snapshot_ctime),
+                                  'age': snapshot_age})
 
         buckets = {}
         counter = -1
-        for i in range(settings['days']):
+        for i in range(settings['hours']):
             counter += 1
             buckets[counter] = []
+        for i in range(settings['days']):
+            counter += (1 * 24)
+            buckets[counter] = []
         for i in range(settings['weeks']):
-            counter += 7
+            counter += (7 * 24)
             buckets[counter] = []
         for i in range(settings['months']):
-            counter += 28
+            counter += (30 * 24)
             buckets[counter] = []
         for i in range(settings['years']):
-            counter += (28 * 12)
+            counter += (30 * 12 * 24)
             buckets[counter] = []
 
         will_delete = False
-
         end_of_life_snapshots = []
-        for snapshot in snapshot_dict:
+        for snapshot in snapshot_list:
+            if snapshot['age'] <= 0:
+                log_debug('[{0}]   - Ignoring {1}@{2} - too fresh'
+                        .format(local_dataset, dataset, snapshot['name']))
+                continue
             possible_keys = []
             for key in buckets:
                 if snapshot['age'] <= key:
@@ -115,17 +136,19 @@ class Cleaner(object):
         if will_delete is True:
             log_info('Cleaning {0}'.format(dataset))
             for snapshot in held_snapshots:
-                log_info('  Skipping held {0}@{1}'.format(dataset, snapshot))
+                log_info('[{0}] -   Skipping held {1}@{2}'.format(local_dataset, dataset, held_snapshots[snapshot]['name']))
 
         keys = list(to_delete.keys())
         keys.sort()
         for key in keys:
             for snapshot in to_delete[key]:
-                log_info('  Destroying {0}@{1}'.format(dataset, snapshot['name']))
-                ZFS.destroy(dataset, snapshot['name'])
+                log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
+                ZFS.destroy(dataset, snapshot['name'], endpoint)
+                snapshots.pop(snapshot['handle'])
         for snapshot in end_of_life_snapshots:
-            log_info('  Destroying {0}@{1}'.format(dataset, snapshot['name']))
-            ZFS.destroy(dataset, snapshot['name'])
+            log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
+            ZFS.destroy(dataset, snapshot['name'], endpoint)
+            snapshots.pop(snapshot['handle'])
 
         if will_delete is True:
-            log_info('Cleaning {0} complete'.format(dataset))
+            log_info('[{0}] - Cleaning {1} complete'.format(local_dataset, dataset))

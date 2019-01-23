@@ -1,8 +1,7 @@
 TODO list for zsnapd
 ====================
 
-* sudo for use on remote end/python wrapper for zfs receive -F ?
-* only send snapshots created by zsnapd
-* paramaters for mbuffer
+* parameters for mbuffer
 * zfs send -R support
-* hourly rolling local snapshots, including clean up
+* better time parameter support, add ability for 
+  time range "hh:mm, hh:mm-hh:mm/interval, ..."

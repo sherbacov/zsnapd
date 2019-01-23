@@ -23,8 +23,14 @@
 Provides basic ZFS functionality
 """
 
+import time
+import re
+from collections import OrderedDict
+
 from magcode.core.globals_ import log_debug, log_info, log_error
 
+from scripts.globals_ import SNAPSHOTNAME_REGEX
+from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
 from scripts.helper import Helper
 
 
@@ -34,37 +40,45 @@ class ZFS(object):
     """
 
     @staticmethod
-    def get_snapshots(dataset='', endpoint=''):
+    def get_snapshots(dataset='', endpoint='', all_snapshots=True):
         """
         Retreives a list of snapshots
         """
 
         if endpoint == '':
-            command = 'zfs list -H -s creation -t snapshot{0}{1}{2} || true'
+            command = 'zfs list -pH -s creation -o name,creation -t snapshot{0}{1} || true'
         else:
-            command = '{0} \'zfs list -H -s creation -t snapshot{1}{2} || true\''
+            command = '{0} \'zfs list -pH -s creation -o name,creation -t snapshot{1} || true\''
         if dataset == '':
             dataset_filter = ''
         else:
-            dataset_filter = ' | grep {0}@'.format(dataset)
-        date_filter = ' | grep -E "^.*\@[0-9]{4}[0-1][0-9][0-3][0-9]\s"'
-        output = Helper.run_command(command.format(endpoint, dataset_filter, date_filter), '/')
+            dataset_filter = ' | grep ^{0}@'.format(dataset)
+        output = Helper.run_command(command.format(endpoint, dataset_filter), '/')
         snapshots = {}
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
             datasetname = parts[0].split('@')[0]
+            creation = int(parts[1])
+            snapshot = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(creation))
+            snapshotname = parts[0].split('@')[1]
+            if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
+                # If required, only read in zsnapd snapshots
+                continue
             if datasetname not in snapshots:
-                snapshots[datasetname] = []
-            snapshots[datasetname].append(parts[0].split('@')[1])
+                snapshots[datasetname] = OrderedDict()
+            snapshots[datasetname].update({snapshot:{'name': snapshotname, 'creation': creation}})
         return snapshots
 
     @staticmethod
-    def get_datasets():
+    def get_datasets(endpoint=''):
         """
         Retreives all datasets
         """
-
-        output = Helper.run_command('zfs list -H', '/')
+        if endpoint == '':
+            command = 'zfs list -H'
+        else:
+            command = "{0} 'zfs list -H'"
+        output = Helper.run_command(command.format(endpoint), '/')
         datasets = []
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
@@ -72,12 +86,14 @@ class ZFS(object):
         return datasets
 
     @staticmethod
-    def snapshot(dataset, name):
+    def snapshot(dataset, name, endpoint=''):
         """
         Takes a snapshot
         """
-
-        command = 'zfs snapshot {0}@{1}'.format(dataset, name)
+        if endpoint == '':
+            command = 'zfs snapshot {0}@{1}'.format(dataset, name)
+        else:
+            command = "{0} 'zfs snapshot {1}@{2}'".format(endpoint, dataset, name)
         Helper.run_command(command, '/')
 
     @staticmethod
@@ -164,10 +180,12 @@ class ZFS(object):
         return '{0}iB'.format(size)
 
     @staticmethod
-    def destroy(dataset, snapshot):
+    def destroy(dataset, snapshot, endpoint=''):
         """
         Destroyes a dataset
         """
-
-        command = 'zfs destroy {0}@{1}'.format(dataset, snapshot)
+        if endpoint == '':
+            command = 'zfs destroy {0}@{1}'.format(dataset, snapshot)
+        else:
+            command = "{0} 'zfs destroy {1}@{2}'".format(endpoint, dataset, snapshot)
         Helper.run_command(command, '/')

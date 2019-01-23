@@ -16,6 +16,7 @@ Features
 --------
 
 * Fully Python3 based
+* Remote mode - snapshotting, script execution, and snapshot aging from central backup server.
 * Native Systemd daemon compitability via py-magcode-core python daemon and logging support library
 * Debug command line switch and stderr logging
 * Systemd journalctl logging.
@@ -147,7 +148,7 @@ Examples
 A summary of the different options:
 
 * mountpoint: Points to the location to which the dataset is mounted, None for volumes
-* time: Can be either a timestamp in 24h notation after which a snapshot needs to be taken. It can also be 'trigger' indicating that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset.
+* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, or a comma separated list of such times. It can also be 'trigger' indicating that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset.
 * snapshot: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
 * replicate_endpoint: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
 * replicate_endpoint_host: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
@@ -157,14 +158,20 @@ A summary of the different options:
 * replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
 * compression: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
 * schema: In case the snapshots should be cleaned, this is the schema the manager will use to clean.
+* local_schema: For local snapshot cleaning/aging when dataset is receptical for remote source
 * preexec: A command that will be executed, before snapshot/replication. Should be omitted if nothing should be executed
 * postexec: A command that will be executed, after snapshot/replication,  but before the cleanup. Should be omitted if nothing should be executed
+* clean_all: Clean/age all snapshots in dataset - default is False - ie zsnapd only
+* local_clean_all: Setting for local dataset when replicating source is remote
+* replicate_all: Replicate all snapshots in dataset - Default is True - ie all snapshots in dataset
 
 Naming convention
 -----------------
 
-This script's snapshot will always given a timestamp (format yyyymmdd) as name. For pool/tank an
-example snapshot name could be pool/tank@20131231
+This script's snapshot will always given a timestamp (format yyyymmddhhmm) as name. For pool/tank an
+example snapshot name could be pool/tank@201312311323.  The daemon is still compatible with the olderyyyymmdd 
+snapshot aging convention, and will replicate and age them.  (Internally, the snapshot 'handles' are now created from
+the snapshot creation time (using Unix timestamp seconds) - this means that manual snapshot names are covered too.)
 
 All snapshots are currently used for replication (both snapshots taken by the script as well as snapshots taken by
 other means (other scripts or manually), regardless of their name.
