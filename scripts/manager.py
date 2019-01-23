@@ -184,9 +184,9 @@ class Manager(object):
         local_dataset = src_dataset if push else dst_dataset
         log_info('[{0}] - Replicating {1}'.format(local_dataset, src_dataset))
         last_common_snapshot = None
-        # If pushing, we search for the last local snapshot that is remotely available
+        # Search for the last src snapshot that is available in dst
         for snapshot in src_snapshots:
-            if snapshot in dst_snapshots[dst_dataset]:
+            if snapshot in dst_snapshots:
                 last_common_snapshot = snapshot
         if last_common_snapshot is not None:  # There's a common snapshot
             previous_snapshot = None
@@ -287,9 +287,6 @@ class Manager(object):
                         if (replicate is True):
                             remote_dataset = replicate_settings['target']
                             remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
-                            if remote_dataset not in remote_snapshots:
-                                log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
-                                continue
                             result = Manager.replicate_byparts(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
@@ -305,8 +302,9 @@ class Manager(object):
                             continue
                         
                         remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
+                        remote_datasets = ZFS.get_datasets(replicate_settings['endpoint'])
                         remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
-                        if remote_dataset not in remote_snapshots:
+                        if remote_dataset not in remote_datasets:
                             log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
                             continue
                         remote_snapshots = remote_snapshots[remote_dataset]
