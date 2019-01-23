@@ -16,6 +16,7 @@ Features
 --------
 
 * Fully Python3 based
+* Remote mode - snapshotting, script execution, and snapshot aging from central backup server.
 * Native Systemd daemon compitability via py-magcode-core python daemon and logging support library
 * Debug command line switch and stderr logging
 * Systemd journalctl logging.
@@ -157,14 +158,17 @@ A summary of the different options:
 * replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
 * compression: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
 * schema: In case the snapshots should be cleaned, this is the schema the manager will use to clean.
+* local_schema: For local snapshot cleaning/aging when dataset is receptical for remote source
 * preexec: A command that will be executed, before snapshot/replication. Should be omitted if nothing should be executed
 * postexec: A command that will be executed, after snapshot/replication,  but before the cleanup. Should be omitted if nothing should be executed
 
 Naming convention
 -----------------
 
-This script's snapshot will always given a timestamp (format yyyymmdd) as name. For pool/tank an
-example snapshot name could be pool/tank@20131231
+This script's snapshot will always given a timestamp (format yyyymmddhhmm) as name. For pool/tank an
+example snapshot name could be pool/tank@201312311323.  The daemon is still compatible with the olderyyyymmdd 
+snapshot aging convention, and will replicate and age them.  (Internally, the snapshot 'handles' are noew created from
+the snapshot creation time (using Unix timestamp seconds) - this means that manual snapshot names are covered too.)
 
 All snapshots are currently used for replication (both snapshots taken by the script as well as snapshots taken by
 other means (other scripts or manually), regardless of their name.

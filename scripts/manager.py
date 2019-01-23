@@ -104,10 +104,9 @@ class Manager(object):
         Runs around creating .trigger files for datasets with time = trigger
         """
         result = True
-        snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()
-        ds_candidates = [ds for ds in args if ds[0] != '/']
-        mnt_candidates = [m for m in args if m[0] == '/']
+        ds_candidates = [ds.rstrip('/') for ds in args if ds[0] != '/']
+        mnt_candidates = [m.rstrip('/') for m in args if m[0] == '/']
         trigger_mnts_dict = {ds_settings[ds]['mountpoint']:ds for ds in ds_settings if ds_settings[ds]['time'] == 'trigger'}
         if len(ds_candidates):
             for candidate in ds_candidates:
@@ -246,6 +245,13 @@ class Manager(object):
                 try:
                     dataset_settings = ds_settings[dataset]
                     local_snapshots = snapshots.get(dataset, OrderedDict())
+                    # Manage what snapshots we operate on - everything or zsnapd only
+                    if not dataset_settings['replicate_all']:
+                        for snapshot in local_snapshots:
+                            snapshotname = local_snapshots[snapshot]['name']
+                            if (re.match(SNAPSHOTNAME_REGEX, snapshotname)):
+                                continue
+                            local_snapshots.pop(snapshot)
 
                     take_snapshot = dataset_settings['snapshot'] is True
                     replicate = dataset_settings['replicate'] is not None
@@ -277,7 +283,8 @@ class Manager(object):
                             result = Manager.snapshot(dataset, local_snapshots, now)
                             if (result == PROC_CHANGED):
                                 # Clean snapshots if one has been taken
-                                Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
+                                Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'],
+                                        all_snapshots=dataset_settings['clean_all'])
                             # Execute postexec command
                             if result and dataset_settings['postexec'] is not None:
                                     Helper.run_command(dataset_settings['postexec'], '/')
@@ -292,7 +299,8 @@ class Manager(object):
 
                         if (replicate is True):
                             remote_dataset = replicate_settings['target']
-                            remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
+                            remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'],
+                                    all_snapshots=dataset_settings['replicate_all'])
                             remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                             result = Manager.replicate_byparts(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
                             # Post execution command
@@ -310,7 +318,8 @@ class Manager(object):
                         
                         remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
                         remote_datasets = ZFS.get_datasets(replicate_settings['endpoint'])
-                        remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
+                        remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'],
+                                all_snapshots=dataset_settings['replicate_all'])
                         if remote_dataset not in remote_datasets:
                             log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
                             continue
@@ -330,13 +339,15 @@ class Manager(object):
                                     Helper.run_command(dataset_settings['postexec'], '/', endpoint=endpoint)
                             if (result == PROC_CHANGED):
                                 # Clean remote snapshots if one has been taken
-                                Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['schema'], endpoint=endpoint, local_dataset=dataset)
+                                Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['schema'],
+                                        endpoint=endpoint, local_dataset=dataset, all_snapshots=dataset_settings['clean_all'])
 
                         if (replicate is True):
                             result = Manager.replicate_byparts(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
                             if (result == PROC_CHANGED):
                                 # Clean snapshots if one has been taken
-                                Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'])
+                                Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'],
+                                        all_snapshots=dataset_settings['local_clean_all'])
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/', endpoint=endpoint)

@@ -61,6 +61,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
         'preexec': SHELLCMD_REGEX,
         'postexec': SHELLCMD_REGEX,
+        'replicate_all': BOOLEAN_REGEX,
         'replicate_postexec': SHELLCMD_REGEX,
         'replicate_target': ds_name_syntax,
         'replicate_source': ds_name_syntax,
@@ -72,6 +73,8 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
         'local_schema': CLEANER_REGEX,
+        'clean_all': BOOLEAN_REGEX,
+        'local_clean_all': BOOLEAN_REGEX,
         'template': template_name_syntax,
         }
 DEFAULT_ENDPOINT_PORT = 22
@@ -219,15 +222,20 @@ class Config(object):
             for dataset in ds_config.sections():
                 ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
                                      'time': ds_config.get(dataset, 'time'),
+                                     'replicate_all': ds_config.get(dataset, 'replicate_all', fallback=True),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
                                      'replicate': None,
                                      'schema': ds_config.get(dataset, 'schema'),
                                      'local_schema': ds_config.get(dataset, 'local_schema', fallback=None),
+                                     'clean_all': ds_config.get(dataset, 'clean_all', fallback=False),
+                                     'local_clean_all': ds_config.get(dataset, 'local_clean_all', fallback=None),
                                      'preexec': ds_config.get(dataset, 'preexec', fallback=None),
                                      'postexec': ds_config.get(dataset, 'postexec', fallback=None),
                                      'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None)}
                 if (ds_settings[dataset]['local_schema'] is None):
                     ds_settings[dataset]['local_schema'] = ds_settings[dataset]['schema']
+                if (ds_settings[dataset]['local_clean_all'] is None):
+                    ds_settings[dataset]['local_clean_all'] = ds_settings[dataset]['clean_all']
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')
