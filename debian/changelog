@@ -1,3 +1,9 @@
+zsnapd (0.6.0-2) unstable; urgency=medium
+
+  * Update dependencies and package description
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 24 Jan 2019 11:27:36 +1300
+
 zsnapd (0.6.0-1) unstable; urgency=medium
 
   * Remote snapshotting and cleaning/ageing
@@ -8,7 +14,7 @@ zsnapd (0.6.0-1) unstable; urgency=medium
   * Cleaning hourly snapshots - extended hr:min names
   * Remove limiting patch - send all snapshots to far end
   * Remove datetime functions from critical path
-  * Seperate into push/pull execution flows
+  * Separate into push/pull execution flows
   * Configuration for managing zsnapd/all snapshots
   * Release v0.6.0 - documentation update
 
