@@ -223,54 +223,6 @@ class Manager(object):
         return result
 
     @staticmethod
-    def replicate_pull_byparts(dataset, local_snapshots, dataset_settings):
-        result = PROC_EXECUTED
-        log_info('Replicating {0}'.format(dataset))
-        replicate_settings = dataset_settings['replicate']
-        push = replicate_settings['target'] is not None
-        remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
-        remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
-        last_common_snapshot = None
-        if remote_dataset in remote_snapshots:
-            # Else, we search for the last remote snapshot that is locally available
-            for snapshot in remote_snapshots[remote_dataset]:
-                if snapshot in local_snapshots:
-                    last_common_snapshot = snapshot
-        if last_common_snapshot is not None:  # There's a common snapshot
-            previous_snapshot = None
-            for snapshot in remote_snapshots[remote_dataset]:
-                if snapshot == last_common_snapshot:
-                    previous_snapshot = last_common_snapshot
-                    continue
-                if previous_snapshot is not None:
-                    # There is a remote snapshot that is not yet on the local host.
-                    prevsnap_name = local_snapshots[previous_snapshot]['name']
-                    snap_name = local_snapshots[snapshot]['name']
-                    size = ZFS.get_size(remote_dataset, prevsnap_name, snap_name, replicate_settings['endpoint'])
-                    log_info('  {0}@{1} > {0}@{2} ({3})'.format(remote_dataset, previous_snapshot, snapshot, size))
-                    ZFS.replicate(remote_dataset, prevsnap_name, snap_name, dataset, replicate_settings['endpoint'], direction='pull', compression=replicate_settings['compression'])
-                    ZFS.hold(dataset, snap_name)
-                    ZFS.hold(remote_dataset, snap_name, replicate_settings['endpoint'])
-                    ZFS.release(dataset, prevsnap_name)
-                    ZFS.release(remote_dataset, prevsnap_name, replicate_settings['endpoint'])
-                    previous_snapshot = snapshot
-                    result = PROC_CHANGED
-        elif remote_dataset in remote_snapshots and len(remote_snapshots[remote_dataset]) > 0:
-            # No common snapshot
-            if len(local_snapshots) == 0:
-                # No local snapshot, full replication
-                snapshot = list(remote_snapshots[remote_dataset])[-1]
-                snap_name = local_snapshots[snapshot]['name']
-                size = ZFS.get_size(remote_dataset, None, snap_name, replicate_settings['endpoint'])
-                log_info('  {0}@         > {0}@{1} ({2})'.format(remote_dataset, snapshot, size))
-                ZFS.replicate(remote_dataset, None, snap_name, dataset, replicate_settings['endpoint'], direction='pull', compression=replicate_settings['compression'])
-                ZFS.hold(dataset, snap_name)
-                ZFS.hold(remote_dataset, snap_name, replicate_settings['endpoint'])
-                result = PROC_CHANGED
-        log_info('Replicating {0} complete'.format(dataset))
-        return result
-
-    @staticmethod
     def run(ds_settings, sleep_time):
         """
         Executes a single run where certain datasets might or might not be snapshotted
