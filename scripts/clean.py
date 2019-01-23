@@ -144,11 +144,11 @@ class Cleaner(object):
             for snapshot in to_delete[key]:
                 log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
                 ZFS.destroy(dataset, snapshot['name'], endpoint)
-                snapshots.remove(snapshot['handle'])
+                snapshots.pop(snapshot['handle'])
         for snapshot in end_of_life_snapshots:
             log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
             ZFS.destroy(dataset, snapshot['name'], endpoint)
-            snapshots.remove(snapshot['handle'])
+            snapshots.pop(snapshot['handle'])
 
         if will_delete is True:
             log_info('[{0}] - Cleaning {1} complete'.format(local_dataset, dataset))
