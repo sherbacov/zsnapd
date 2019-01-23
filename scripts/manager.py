@@ -28,6 +28,7 @@ import time
 import os
 import re
 from collections import OrderedDict
+from socket import gethostname
 
 from magcode.core.globals_ import *
 from magcode.core.utility import connect_test_address
@@ -181,8 +182,11 @@ class Manager(object):
         result = PROC_EXECUTED
         push = replicate_settings['target'] is not None
         replicate_dirN = 'push' if push else 'pull'
+        src_endpoint = '' if push else replicate_settings['endpoint']
+        dst_endpoint = replicate_settings['endpoint'] if push else ''
+        src_host = gethostname().split('.')[0] if push else replicate_settings['endpoint_host']
         local_dataset = src_dataset if push else dst_dataset
-        log_info('[{0}] - Replicating {1}'.format(local_dataset, src_dataset))
+        log_info('[{0}] - Replicating [{1}]:{2}'.format(local_dataset, src_host, src_dataset))
         last_common_snapshot = None
         # Search for the last src snapshot that is available in dst
         for snapshot in src_snapshots:
@@ -198,28 +202,28 @@ class Manager(object):
                     prevsnap_name = src_snapshots[previous_snapshot]['name']
                     snap_name = src_snapshots[snapshot]['name']
                     # There is a snapshot on this host that is not yet on the other side.
-                    size = ZFS.get_size(src_dataset, prevsnap_name, snap_name)
+                    size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint)
                     log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                     ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                             direction=replicate_dirN, compression=replicate_settings['compression'])
-                    ZFS.hold(src_dataset, snap_name)
-                    ZFS.hold(dst_dataset, snap_name, replicate_settings['endpoint'])
-                    ZFS.release(src_dataset, prevsnap_name)
-                    ZFS.release(dst_dataset, prevsnap_name, replicate_settings['endpoint'])
+                    ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
+                    ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
+                    ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint)
+                    ZFS.release(dst_dataset, prevsnap_name, endpoint=dst_endpoint)
                     previous_snapshot = snapshot
                     result = PROC_CHANGED
         elif len(src_snapshots) > 0:
             # No remote snapshot, full replication
             snapshot = list(src_snapshots)[-1]
             snap_name = src_snapshots[snapshot]['name']
-            size = ZFS.get_size(src_dataset, None, snap_name)
+            size = ZFS.get_size(src_dataset, None, snap_name, endpoint=src_endpoint)
             log_info('  {0}@         > {0}@{1} ({2})'.format(src_dataset, snap_name, size))
             ZFS.replicate(src_dataset, None, snap_name, dst_dataset, replicate_settings['endpoint'],
                     direction=replicate_dirN, compression=replicate_settings['compression'])
-            ZFS.hold(src_dataset, snap_name)
-            ZFS.hold(dst_dataset, snap_name, replicate_settings['endpoint'])
+            ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
+            ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
             result = PROC_CHANGED
-        log_info('Replicating {0} complete'.format(src_dataset))
+        log_info('[{0}] - Replicating [{1}]:{2} complete'.format(local_dataset, src_host, src_dataset))
         return result
 
     @staticmethod
@@ -337,7 +341,7 @@ class Manager(object):
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'])
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
-                                Helper.run_command(dataset_settings['replicate_postexec'], '/')
+                                Helper.run_command(dataset_settings['replicate_postexec'], '/', endpoint=endpoint)
 
                 except Exception as ex:
                     log_error('[{0}] - Exception: {1}'.format(dataset, str(ex)))
