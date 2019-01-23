@@ -211,6 +211,7 @@ class Manager(object):
                     ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint)
                     ZFS.release(dst_dataset, prevsnap_name, endpoint=dst_endpoint)
                     previous_snapshot = snapshot
+                    dst_snapshots.update({snapshot:src_snapshots[snapshot]})
                     result = PROC_CHANGED
         elif len(src_snapshots) > 0:
             # No remote snapshot, full replication
@@ -222,6 +223,7 @@ class Manager(object):
                     direction=replicate_dirN, compression=replicate_settings['compression'])
             ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
             ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
+            dst_snapshots.update({snapshot:src_snapshots[snapshot]})
             result = PROC_CHANGED
         log_info('[{0}] - Replicating [{1}]:{2} complete'.format(local_dataset, src_host, src_dataset))
         return result

@@ -76,6 +76,7 @@ class Cleaner(object):
             snapshot_age = (base_time - snapshot_ctime)/3600
             snapshot_age = int(snapshot_age) if snapshot_age >= 0 else -1
             snapshot_list.append({'name': snapshotname,
+                                  'handle': snapshot,
                                   'time': datetime.fromtimestamp(snapshot_ctime),
                                   'age': snapshot_age})
 
@@ -143,9 +144,11 @@ class Cleaner(object):
             for snapshot in to_delete[key]:
                 log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
                 ZFS.destroy(dataset, snapshot['name'], endpoint)
+                snapshots.remove(snapshot['handle'])
         for snapshot in end_of_life_snapshots:
             log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
             ZFS.destroy(dataset, snapshot['name'], endpoint)
+                snapshots.remove(snapshot['handle'])
 
         if will_delete is True:
             log_info('[{0}] - Cleaning {1} complete'.format(local_dataset, dataset))
