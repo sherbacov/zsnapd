@@ -49,7 +49,7 @@ ds_name_reserved_regex = r'^(log|DEFAULT|(c[0-9]|log/|mirror|raidz|raidz1|raidz2
 template_name_syntax = r'^[a-zA-Z0-9][-_:.a-zA-Z0-9]*$'
 BOOLEAN_REGEX = r'^([tT]rue|[fF]alse|[oO]n|[oO]ff|0|1)$'
 PATH_REGEX = r'[-_./~a-zA-Z0-9]+'
-SHELLCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]+$'
+SHELLCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|=$"' + r"'" + r']+$'
 SHELLFORMAT_REGEX = r'^[-_./~a-zA-Z0-9 	:@|{}]+$'
 NETCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]*$'
 HOST_REGEX = r'^[0-9a-zA-Z\[][-_.:a-zA-Z0-9\]]*$'

@@ -287,6 +287,7 @@ class Manager(object):
                         if (replicate is True):
                             remote_dataset = replicate_settings['target']
                             remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
+                            remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                             result = Manager.replicate_byparts(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
@@ -297,7 +298,7 @@ class Manager(object):
                         # If network replicating, check connectivity here
                         test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
                         if test_unconnected:
-                            log_error("[{$0}] - Skipping as '{1}:{2}' unreachable"
+                            log_warn("[{$0}] - Skipping as '{1}:{2}' unreachable"
                                     .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
                             continue
                         
@@ -307,7 +308,7 @@ class Manager(object):
                         if remote_dataset not in remote_datasets:
                             log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
                             continue
-                        remote_snapshots = remote_snapshots[remote_dataset]
+                        remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                         endpoint = replicate_settings['endpoint']
                         if (take_snapshot is True and this_time not in remote_snapshots):
                             # Only execute everything here if needed
