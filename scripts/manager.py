@@ -281,7 +281,7 @@ class Manager(object):
                         # If network replicating, check connectivity here
                         test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
                         if test_unconnected:
-                            log_info('[{$0}] - Skipping as '{1}:{2}' unreachable'
+                            log_info("[{$0}] - Skipping as '{1}:{2}' unreachable"
                                     .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
                             continue
 
@@ -301,7 +301,7 @@ class Manager(object):
                         # If network replicating, check connectivity here
                         test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
                         if test_unconnected:
-                            log_error('[{$0}] - Skipping as '{1}:{2}' unreachable'
+                            log_error("[{$0}] - Skipping as '{1}:{2}' unreachable"
                                     .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
                             continue
                         
