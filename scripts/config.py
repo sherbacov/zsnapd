@@ -71,6 +71,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_use_sudo': BOOLEAN_REGEX,
         'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
+        'local_schema': CLEANER_REGEX,
         'template': template_name_syntax,
         }
 DEFAULT_ENDPOINT_PORT = 22
@@ -221,9 +222,12 @@ class Config(object):
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
                                      'replicate': None,
                                      'schema': ds_config.get(dataset, 'schema'),
+                                     'local_schema': ds_config.get(dataset, 'local_schema', fallback=None),
                                      'preexec': ds_config.get(dataset, 'preexec', fallback=None),
                                      'postexec': ds_config.get(dataset, 'postexec', fallback=None),
                                      'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None)}
+                if (ds_settings[dataset]['local_schema'] is None):
+                    ds_settings[dataset]['local_schema'] = ds_settings[dataset]['schema']
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')

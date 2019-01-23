@@ -270,12 +270,12 @@ class Manager(object):
 
                         if (take_snapshot is True and this_time not in local_snapshots):
                             result = Manager.snapshot(dataset, local_snapshots, now)
-                            # Execute postexec command
-                            if result and dataset_settings['postexec'] is not None:
-                                    Helper.run_command(dataset_settings['postexec'], '/')
                             if (result == PROC_CHANGED):
                                 # Clean snapshots if one has been taken
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
+                            # Execute postexec command
+                            if result and dataset_settings['postexec'] is not None:
+                                    Helper.run_command(dataset_settings['postexec'], '/')
 
                         # Replicating, if required
                         # If network replicating, check connectivity here
@@ -312,7 +312,7 @@ class Manager(object):
                             continue
                         remote_snapshots = remote_snapshots[remote_dataset]
                         endpoint = replicate_settings['endpoint']
-                        if take_snapshot is True:
+                        if (take_snapshot is True and this_time not in remote_snapshots):
                             # Only execute everything here if needed
 
                             # Remote Pre exectution command
@@ -320,22 +320,26 @@ class Manager(object):
                                 Helper.run_command(dataset_settings['preexec'], '/', endpoint=endpoint)
 
                             # Take remote snapshot
-                            result = Manager.snapshot(dataset, remote_snapshots, now, endpoint=endpoint, local_dataset=dataset)
+                            result = Manager.snapshot(remote_dataset, remote_snapshots, now, endpoint=endpoint, local_dataset=dataset)
                             # Execute remote postexec command
                             if result and dataset_settings['postexec'] is not None:
                                     Helper.run_command(dataset_settings['postexec'], '/', endpoint=endpoint)
                             if (result == PROC_CHANGED):
                                 # Clean remote snapshots if one has been taken
-                                Cleaner.clean(dataset, remote_snapshots, dataset_settings['schema'], endpoint=endpoint, local_dataset=dataset)
+                                Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['schema'], endpoint=endpoint, local_dataset=dataset)
 
                         if (replicate is True):
                             result = Manager.replicate_byparts(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
+                            if (result == PROC_CHANGED):
+                                # Refresh snapshots on disk - replication has added new snapshots
+                                fresh_snapshots = ZFS.get_snapshots(dataset=dataset)
+                                snapshots[dataset] = fresh_snapshots.get(dataset, OrderedDict())
+                                local_snapshots = snapshots[dataset]
+                                # Clean snapshots if one has been taken
+                                Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'])
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/')
-                            if (result == PROC_CHANGED):
-                                # Clean snapshots if one has been taken
-                                Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
                 except Exception as ex:
                     log_error('[{0}] - Exception: {1}'.format(dataset, str(ex)))
