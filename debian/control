@@ -11,13 +11,13 @@ Homepage: https://github.com/khenderick/zfs-snap-manager
 
 Package: zsnapd
 Architecture: all
+Suggests: sudo
 Recommends:  openssh-server,
   openssh-client,
-  mbuffer,
-  sudo
+  mbuffer
 Depends: ${misc:Depends},
   python3:any (>= 3.3.2~),
-  python3-magcode-core (>=1.4.14~),
+  python3-magcode-core (>=1.5.2~),
   python3-setproctitle,
   python3-psutil,
   zfsutils-linux
@@ -25,19 +25,25 @@ Description: ZFS Snapshot Daemon written in python
  Python daemon that manages ZFS snapshots and send/receive backup.  
  Based on zfs-snap-manager.
  .
-   * Configuration is stored in configuration files with the ini file 
-     format.
+   * Remote ZFS snapshoting/aging wnd replication back to central ZFS
+     backup server. Only need to install zfs-utils and sshd on client,
+     and use root ssh key based log in.
+   * Has connectivity test to skip scheduled actions when the remote site
+     cannot be contacted.  Reachability failures are logged of course!
    * Uses Python3
    * Native systemd support.
+   * Configuration is stored in configuration files with the ini file 
+     format. Configuration .d parts directories also present
    * Triggers the configured actions based on time or a '.trigger' file 
      present in the dataset's mountpoint.
-   * Can take snapshots (with a yyyymmdd timestamp format).
+   * Can take snapshots (with a yyyymmddhhmm timestamp format).
    * Can replicate snapshots to/from other nodes.
    * Push based when the replication source has access to the replication
      target.
    * Pull based when the replication source has no access to the replication
      target. Typically when you don't want to give all nodes access to the
      backup/replication target.
-   * Cleans all snapshots with the yyyymmdd timestamp format based on a GFS 
-     schema (Grandfather, Father, Son).
+   * Cleans all snapshots with the yyyymmddhh timestamp schmea format based
+     on a GFS schema (Grandfather, Father, Son).  Timestamp
+     evaluation based on actual ZFS snapshot creation metadata.
    * Supports pre and post commands.
