@@ -64,14 +64,19 @@ class IsConnected(object):
                 time.sleep(connect_retry_wait)
                 continue
         else:
-            log_error("Can't reach endpoint '{0}:{1}' - {2}".format(host, port, exc_msg))
+            if self.local_dataset:
+                log_info("[{0}] - Can't reach endpoint '{1}:{2}' - {3}"
+                        .format(self.local_dataset, host, port, exc_msg))
+            else:
+                log_error("Can't reach endpoint '{0}:{1}' - {2}".format(host, port, exc_msg))
             return False
         return True
 
-    def test_unconnected(self, dataset_settings):
+    def test_unconnected(self, dataset_settings, local_dataset=''):
         """
         Check that endpoint is unconnected
         """
+        self.local_dataset = local_dataset
         replicate_param = dataset_settings['replicate']
         if (replicate_param and replicate_param['endpoint_host']):
             host = replicate_param['endpoint_host']
@@ -163,7 +168,7 @@ class Manager(object):
             ZFS.snapshot(dataset, this_time, endpoint=endpoint)
         except Exception as ex:
             # if snapshot fails move onto next one
-            log_error('[{0}] - Exception: {1}'.format(local_dataset, str(ex)))
+            log_error('[{0}] -   Exception: {1}'.format(local_dataset, str(ex)))
             return PROC_FAILURE
         else:
             snapshots.update({this_time:{'name': this_time, 'creation': now}})
@@ -294,14 +299,14 @@ class Manager(object):
                         # We wait until we find a trigger file in the filesystem
                         trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
                         if os.path.exists(trigger_filename):
-                            log_info('Trigger found on {0}'.format(dataset))
+                            log_info('[{0}] - Trigger found on {1}'.format(dataset, dataset))
                             os.remove(trigger_filename)
                         else:
                             continue
                     else:
                         if not meter_time.has_time_passed(dataset_settings['time'], now):
                             continue
-                        log_info('Time passed for {0}'.format(dataset))
+                        log_info('[{0}] - Time passed for {1}'.format(dataset, dataset))
 
 
                     replicate_settings = dataset_settings['replicate']
@@ -322,7 +327,7 @@ class Manager(object):
 
                         # Replicating, if required
                         # If network replicating, check connectivity here
-                        test_unconnected = is_connected.test_unconnected(dataset_settings)
+                        test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
                         if test_unconnected:
                             log_info('[{$0}] - Skipping as '{1}:{2}' unreachable'
                                     .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
@@ -337,7 +342,7 @@ class Manager(object):
                         # Pull logic for remote site
                         # Replicating, if required
                         # If network replicating, check connectivity here
-                        test_unconnected = is_connected.test_unconnected(dataset_settings)
+                        test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
                         if test_unconnected:
                             log_error('[{$0}] - Skipping as '{1}:{2}' unreachable'
                                     .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
@@ -346,7 +351,7 @@ class Manager(object):
                         remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
                         remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'])
                         if remote_dataset not in remote_snapshots:
-                            log_error('[{0}] - remote dataset '{1}' does not exist'.format(dataset, remote_dataset))
+                            log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
                             continue
                         remote_snapshots = remote_snapshots[remote_dataset]
                         endpoint = replicate_settings['endpoint']
@@ -376,7 +381,7 @@ class Manager(object):
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'])
 
                 except Exception as ex:
-                    log_error('Exception: {0}'.format(str(ex)))
+                    log_error('[{0}] - Exception: {1}'.format(dataset, str(ex)))
 
         # Clean up
         del is_connected
