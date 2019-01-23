@@ -335,10 +335,6 @@ class Manager(object):
                         if (replicate is True):
                             result = Manager.replicate_byparts(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
                             if (result == PROC_CHANGED):
-                                # Refresh snapshots on disk - replication has added new snapshots
-                                fresh_snapshots = ZFS.get_snapshots(dataset=dataset)
-                                snapshots[dataset] = fresh_snapshots.get(dataset, OrderedDict())
-                                local_snapshots = snapshots[dataset]
                                 # Clean snapshots if one has been taken
                                 Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'])
                             # Post execution command
