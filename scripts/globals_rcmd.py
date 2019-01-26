@@ -5,8 +5,8 @@ Globals file for zsnapd
 from magcode.core.globals_ import settings
 
 # settings for where files are
-settings['config_dir'] = '/etc/zsnapd'
-settings['log_dir'] = '/var/log/zsnapd'
+settings['config_dir'] = '/etc/'
+settings['log_dir'] = '/var/log/'
 settings['run_dir'] = '/run'
 settings['config_file'] = settings['config_dir'] + '/' + 'zsnapd-rcmd.conf'
 
