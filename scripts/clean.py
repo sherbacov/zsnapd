@@ -44,7 +44,7 @@ class Cleaner(object):
     logger = None  # The manager will fill this object
 
     @staticmethod
-    def clean(dataset, snapshots, schema, endpoint='', local_dataset='', all_snapshots=False):
+    def clean(dataset, snapshots, schema, endpoint='', local_dataset='', all_snapshots=False, return_no_keep=True):
         local_dataset = local_dataset if local_dataset else dataset
         now = time.localtime()
         midnight = time.mktime(time.strptime('{0}-{1}-{2}'.format(now.tm_year, now.tm_mon, now.tm_mday) , '%Y-%m-%d'))
@@ -70,6 +70,8 @@ class Cleaner(object):
                 # If required, only clean zsnapd snapshots
                 continue
             if ZFS.is_held(dataset, snapshotname, endpoint):
+                log_debug('[{0}]   - Ignoring and keeping {1}@{2} - held snapshot'
+                        .format(local_dataset, dataset, snapshotname))
                 held_snapshots.update({snapshot:snapshots[snapshot]})
                 continue
             snapshot_ctime = snapshots[snapshot]['creation']
@@ -100,10 +102,12 @@ class Cleaner(object):
 
         will_delete = False
         end_of_life_snapshots = []
+        kept_flag = False
         for snapshot in snapshot_list:
             if snapshot['age'] <= 0:
-                log_debug('[{0}]   - Ignoring {1}@{2} - too fresh'
+                log_debug('[{0}]   - Ignoring and keeping {1}@{2} - too fresh'
                         .format(local_dataset, dataset, snapshot['name']))
+                kept_flag = True
                 continue
             possible_keys = []
             for key in buckets:
@@ -114,6 +118,10 @@ class Cleaner(object):
             else:
                 will_delete = True
                 end_of_life_snapshots.append(snapshot)
+
+        # Return from procedure if no scripts found to keep
+        if (return_no_keep and not kept_flag):
+            return
 
         to_delete = {}
         to_keep = {}

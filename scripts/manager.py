@@ -279,15 +279,16 @@ class Manager(object):
                         if dataset_settings['preexec'] is not None:
                             Helper.run_command(dataset_settings['preexec'], '/')
 
+                        result = PROC_FAILURE
                         if (take_snapshot is True and this_time not in local_snapshots):
                             result = Manager.snapshot(dataset, local_snapshots, now)
-                            if (result == PROC_CHANGED):
-                                # Clean snapshots if one has been taken
-                                Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'],
-                                        all_snapshots=dataset_settings['clean_all'])
-                            # Execute postexec command
-                            if result and dataset_settings['postexec'] is not None:
-                                    Helper.run_command(dataset_settings['postexec'], '/')
+                        # Clean snapshots if one has been taken - clean will not execute
+                        # if no snapshot taken
+                        Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'],
+                                all_snapshots=dataset_settings['clean_all'])
+                        # Execute postexec command
+                        if result and dataset_settings['postexec'] is not None:
+                                Helper.run_command(dataset_settings['postexec'], '/')
 
                         # Replicating, if required
                         # If network replicating, check connectivity here
@@ -333,21 +334,21 @@ class Manager(object):
                                 Helper.run_command(dataset_settings['preexec'], '/', endpoint=endpoint)
 
                             # Take remote snapshot
+                            result = PROC_FAILURE
                             result = Manager.snapshot(remote_dataset, remote_snapshots, now, endpoint=endpoint, local_dataset=dataset)
+                            # Clean remote snapshots if one has been taken - only kept snapshots will aging to happen
+                            Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['schema'],
+                                    endpoint=endpoint, local_dataset=dataset, all_snapshots=dataset_settings['clean_all'])
                             # Execute remote postexec command
                             if result and dataset_settings['postexec'] is not None:
                                     Helper.run_command(dataset_settings['postexec'], '/', endpoint=endpoint)
-                            if (result == PROC_CHANGED):
-                                # Clean remote snapshots if one has been taken
-                                Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['schema'],
-                                        endpoint=endpoint, local_dataset=dataset, all_snapshots=dataset_settings['clean_all'])
 
                         if (replicate is True):
+                            result = PROC_FAILURE
                             result = Manager.replicate_byparts(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
-                            if (result == PROC_CHANGED):
-                                # Clean snapshots if one has been taken
-                                Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'],
-                                        all_snapshots=dataset_settings['local_clean_all'])
+                            # Clean snapshots locally if one has been taken - only kept snapshots will allow aging
+                            Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'],
+                                    all_snapshots=dataset_settings['local_clean_all'])
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/', endpoint=endpoint)
