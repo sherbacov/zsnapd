@@ -5,8 +5,8 @@ Globals file for zsnapd
 from magcode.core.globals_ import settings
 
 # settings for where files are
-settings['config_dir'] = '/etc/zsnapd'
-settings['log_dir'] = '/var/log/zsnapd'
+settings['config_dir'] = '/etc/'
+settings['log_dir'] = '/var/log/'
 settings['run_dir'] = '/run'
 settings['config_file'] = settings['config_dir'] + '/' + 'zsnapd-rcmd.conf'
 
@@ -44,4 +44,14 @@ settings['rcmd_zfs_destroy'] = ''
 settings['rcmd_preexec'] = ''
 settings['rcmd_postexec'] = ''
 settings['rcmd_replicate_postexec'] = ''
+settings['rcmd_aux0'] = ''
+settings['rcmd_aux1'] = ''
+settings['rcmd_aux2'] = ''
+settings['rcmd_aux3'] = ''
+settings['rcmd_aux4'] = ''
+settings['rcmd_aux5'] = ''
+settings['rcmd_aux6'] = ''
+settings['rcmd_aux7'] = ''
+settings['rcmd_aux8'] = ''
+settings['rcmd_aux9'] = ''
 
