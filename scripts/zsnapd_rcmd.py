@@ -137,7 +137,7 @@ class ZsnapdRCmdProcess(Process):
             if debug_verbose():
                 log_debug("   nomatch: regex: '{0}'".format(regex))
         if not allowed:
-            log_error("Command rejected: '{0}'".format(orig_cmd)) 
+            log_error("Command rejected: '{0}'".format(orig_cmd))
             print('Rejected')
             sys.exit(os.EX_NOPERM)
 
@@ -151,4 +151,3 @@ class ZsnapdRCmdProcess(Process):
             sys.exit(os.EX_OK)
         os.execve(argv[0], argv, env)
 
-    
