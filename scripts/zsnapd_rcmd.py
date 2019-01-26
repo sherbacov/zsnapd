@@ -94,6 +94,16 @@ class ZsnapdRCmdProcess(Process):
                 'rcmd_preexec': settings['rcmd_preexec'],
                 'rcmd_postexec': settings['rcmd_postexec'],
                 'rcmd_replicate_postexec': settings['rcmd_replicate_postexec'],
+                'rcmd_aux0': settings['rcmd_aux0'],
+                'rcmd_aux1': settings['rcmd_aux1'],
+                'rcmd_aux2': settings['rcmd_aux2'],
+                'rcmd_aux3': settings['rcmd_aux3'],
+                'rcmd_aux4': settings['rcmd_aux4'],
+                'rcmd_aux5': settings['rcmd_aux5'],
+                'rcmd_aux6': settings['rcmd_aux6'],
+                'rcmd_aux7': settings['rcmd_aux7'],
+                'rcmd_aux8': settings['rcmd_aux8'],
+                'rcmd_aux9': settings['rcmd_aux9'],
                 }
         regex_error_flag = False
         for key in allowed_cmd_regex_dict:
