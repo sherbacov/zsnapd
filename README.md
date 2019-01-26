@@ -16,6 +16,7 @@ Features
 --------
 
 * Fully Python3 based
+* Laptop friendly as has built in connectivity test to check remote port reachability
 * Remote mode - snapshotting, script execution, and snapshot aging from central backup server.
 * Native Systemd daemon compitability via py-magcode-core python daemon and logging support library
 * Debug command line switch and stderr logging
@@ -32,6 +33,7 @@ Features
 * Supports pre and post commands
   * Pre command is executed before any action is executed
   * Post command is executed after the actions are executed, but before cleaning
+* Has sshd remote execution filter script zsnapd-rcmd.  See etc/zsnapd/zsnapd-rcmd.conf for configuration.
 
 Configuration
 -------------
