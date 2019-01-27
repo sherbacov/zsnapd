@@ -1,3 +1,9 @@
+zsnapd (0.7.5-1) unstable; urgency=medium
+
+  * zsnapd-rcmd - Error to stderr for rejected command.
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Sun, 27 Jan 2019 16:01:39 +1300
+
 zsnapd (0.7.4-1) unstable; urgency=medium
 
   * Version 0.7.4 - add zsnapd-rcmd for sshd sanity
