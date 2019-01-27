@@ -51,6 +51,7 @@ Description: ZFS Snapshot Daemon written in python
    * Supports pre and post commands.
 
 Package: zsnapd-rcmd
+Architecture: all
 Recommends: openssh-server
 Depends: ${misc:Depends},
   python3:any (>= 3.3.2~),
