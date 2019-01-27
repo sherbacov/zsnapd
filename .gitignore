@@ -11,6 +11,7 @@ packages/*
 <<<<<<< HEAD
 # Stuff in debian we should not worry about
 /debian/zsnapd/
+/debian/zsnapd-rcmd/
 /debian/*.debhelper*
 /debian/*.substvars
 /debian/files
