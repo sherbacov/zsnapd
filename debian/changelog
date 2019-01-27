@@ -1,3 +1,10 @@
+zsnapd (0.7.6-1) unstable; urgency=medium
+
+  * Update Documentation - remove sudo etc
+  * Version 0.7.6
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Mon, 28 Jan 2019 12:00:05 +1300
+
 zsnapd (0.7.5-1) unstable; urgency=medium
 
   * zsnapd-rcmd - Error to stderr for rejected command.
