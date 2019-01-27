@@ -1,5 +1,14 @@
-scripts/*.py	/usr/share/zsnapd/scripts
+scripts/clean.py		/usr/share/zsnapd/scripts
+scripts/config.py		/usr/share/zsnapd/scripts
+scripts/globals_.py		/usr/share/zsnapd/scripts
+scripts/helper.py		/usr/share/zsnapd/scripts
+scripts/manager.py		/usr/share/zsnapd/scripts
+scripts/zfs.py			/usr/share/zsnapd/scripts
+scripts/zsnapd_cfgtest.py	/usr/share/zsnapd/scripts
+scripts/zsnapd.py		/usr/share/zsnapd/scripts
+scripts/zsnapd_trigger.py	/usr/share/zsnapd/scripts
 zsnapd		/usr/share/zsnapd
 zsnapd-cfgtest	/usr/share/zsnapd
 zsnapd-trigger	/usr/share/zsnapd
-etc/zsnapd	/etc
+etc/zsnapd/process.conf	/etc/zsnapd
+etc/zsnapd/dataset.conf	/etc/zsnapd

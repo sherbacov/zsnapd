@@ -11,13 +11,13 @@ Homepage: https://github.com/khenderick/zfs-snap-manager
 
 Package: zsnapd
 Architecture: all
-Suggests: sudo
 Recommends:  openssh-server,
   openssh-client,
-  mbuffer
+  mbuffer,
+  zsnapd-rcmd
 Depends: ${misc:Depends},
   python3:any (>= 3.3.2~),
-  python3-magcode-core (>=1.5.2~),
+  python3-magcode-core (>=1.5.4~),
   python3-setproctitle,
   python3-psutil,
   zfsutils-linux
@@ -26,10 +26,12 @@ Description: ZFS Snapshot Daemon written in python
  Based on zfs-snap-manager.
  .
    * Remote ZFS snapshoting/aging wnd replication back to central ZFS
-     backup server. Only need to install zfs-utils and sshd on client,
-     and use root ssh key based log in.
+     backup server. Only need to install zfs-utils, zsnapd-rcmd (for secure)
+     remote ssh key login and sshd on client, and use root ssh key based 
+     log in.
    * Has connectivity test to skip scheduled actions when the remote site
-     cannot be contacted.  Reachability failures are logged of course!
+     cannot be contacted.  Actually quite useful for ZFS backing up laptops.
+     Reachability failures are logged of course!
    * Uses Python3
    * Native systemd support.
    * Configuration is stored in configuration files with the ini file 
@@ -47,3 +49,19 @@ Description: ZFS Snapshot Daemon written in python
      on a GFS schema (Grandfather, Father, Son).  Timestamp
      evaluation based on actual ZFS snapshot creation metadata.
    * Supports pre and post commands.
+
+Package: zsnapd-rcmd
+Recommends: openssh-server
+Depends: ${misc:Depends},
+  python3:any (>= 3.3.2~),
+  python3-magcode-core (>=1.5.4~),
+  python3-setproctitle
+Description: Remote sshd command checker for ZFS Snapshot Daemon
+ ZFS Snapshot Daemon is written in python, and it can remotely manage ZFS
+ snapshotting and backup from a central back up server.  This is the
+ security plugin command for sshd that implements ForceCommand functionality,
+ or the command functionality in the .ssh/authorized_keys file (See 
+ the sshd_config(8) and sshd(8) man pages respectively).
+ .
+ It executes commands from the SSH_ORIGINAL_COMMAND variable after checking
+ them against a list of configured regular expressions. 
