@@ -123,7 +123,7 @@ class ZsnapdRCmdProcess(Process):
 
         if regex_error_flag:
             log_error('Exiting and not processing because of bad regex(es)!')
-            print ('Rejected')
+            print('SECURITY - command rejected', file=sys.stderr)
             sys.exit(os.EX_NOPERM)
 
         # Process command
@@ -132,7 +132,7 @@ class ZsnapdRCmdProcess(Process):
             log_debug("SSH_ORIGINAL_COMMAND is: '{0}'".format(orig_cmd))
         except KeyError:
             log_error('SSH_ORIGINAL_COMMAND - environment variable not found.')
-            print ('Rejected')
+            print('SECURITY - command rejected', file=sys.stderr)
             sys.exit(os.EX_NOPERM)
         allowed = False
         for regex in allowed_cmd_regex_dict.values():
@@ -148,7 +148,7 @@ class ZsnapdRCmdProcess(Process):
                 log_debug("   nomatch: regex: '{0}'".format(regex))
         if not allowed:
             log_error("Command rejected: '{0}'".format(orig_cmd))
-            print('Rejected')
+            print('SECURITY - command rejected', file=sys.stderr)
             sys.exit(os.EX_NOPERM)
 
         log_info("Command accepted: '{0}'".format(orig_cmd))
