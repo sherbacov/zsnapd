@@ -7,8 +7,9 @@ scripts/zfs.py			/usr/share/zsnapd/scripts
 scripts/zsnapd_cfgtest.py	/usr/share/zsnapd/scripts
 scripts/zsnapd.py		/usr/share/zsnapd/scripts
 scripts/zsnapd_trigger.py	/usr/share/zsnapd/scripts
-zsnapd		/usr/share/zsnapd
-zsnapd-cfgtest	/usr/share/zsnapd
-zsnapd-trigger	/usr/share/zsnapd
-etc/zsnapd/process.conf	/etc/zsnapd
-etc/zsnapd/dataset.conf	/etc/zsnapd
+zsnapd				/usr/share/zsnapd
+zsnapd-cfgtest			/usr/share/zsnapd
+zsnapd-trigger			/usr/share/zsnapd
+etc/zsnapd/process.conf		/etc/zsnapd
+etc/zsnapd/dataset.conf		/etc/zsnapd
+etc/zsnapd/template.conf	/etc/zsnapd
