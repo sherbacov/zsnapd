@@ -108,7 +108,7 @@ Examples
 
     [backup-local]
     replicate_endpoint_port = 2345
-    replicate_endpoint_command = ssh -l backup -p {port} {host} sudo
+    replicate_endpoint_command = ssh -l backup -p {port} {host}
     compression = gzip
 
     [backup-other]
@@ -195,16 +195,62 @@ For example, the schema '7d3w11m4y' means:
 
 * 7 daily buckets (starting from today)
 * 3 weekly buckets (7 days a week)
-* 11 monthly buckets (28 days a month)
-* 4 yearly buckets (12 * 28 days a year)
+* 11 monthly buckets (30 days a month)
+* 4 yearly buckets (12 * 30 days a year)
 
-This wraps up to 5 years (where a year is 12 * 28 days - so not mapping to a real year)
+This wraps up to 5 years (where a year is 12 * 30 days - so not mapping to a real year)
 
 Other schema's are possible. One could for example only be intrested in keeping only the
 snapshots for last week, in which the schema '7d0w0m0y' would be given. Any combination is possible.
 
 Since from each bucket, the oldest snapshot is kept, snapshots will seem to "roll"
 trough the buckets.
+
+The number of 'keep' days before aging can be given, as well as hourly buckets before the days kick in, 
+ie '2k24h7d3w11m4y':
+
+* 2 keep days starting from midnight, no snapshots deleted
+* 24 hourly buckets starting from midnight in 2 days
+* 7 daily buckets
+* 3 weekly buckets (7 days a week)
+* 11 monthly buckets (30 days a month)
+* 4 yearly buckets (12 * 30 days a year)
+
+Remote Execution Security
+-------------------------
+
+Sudo with a backup user on the remote was considered, but after reviewing the
+sshd ForceCommand mechanism for remote excution, this was chosen as far easier
+and superior. Thus, zsnapd-rcmd, the remote sshd command checker for ZFS
+Snapshot Daemon
+
+zsnapd-rcmd is the security plugin command for sshd that implements ForceCommand
+functionality, or the command functionality in the .ssh/authorized_keys file
+(See the sshd_config(8) and sshd(8) man pages respectively).
+
+It executes commands from the SSH_ORIGINAL_COMMAND variable after checking
+them against a list of configured regular expressions. 
+
+Edit the zsnapd-rcmd.conf files in /etc/zsnapd, to set up the check regexps
+for the remote preexec, postexec, and replicate_postexec commands.  Settings
+are also available for 10 extra remote commands, labeled rcmd_aux0 - rcmd_aux9
+
+Read the sshd(8) manpage on the ForceCommand setting, and the sshd(8) manpage
+on the /root/.ssh/authorized_keys file, command entry for the remote pub key
+for zsnapd access.
+
+Example .ssh/authorized_keys entry (single line - unline wrap it):
+
+no-pty,no-agent-forwarding,no-X11-forwarding,no-port-forwarding,
+command="/usr/sbin/zsnapd-rcmd" ssh-rsa AAAABBBBBBBBCCCCCCCCCCCCC
+DDDDDDDD== root@blah.org
+
+Hint: command line arguments can be given, such as a different config file,
+and debug level:
+
+no-pty,no-agent-forwarding,no-X11-forwarding,no-port-forwarding,
+command="/usr/sbin/zsnapd-rcmd -c /etc/zsnapd/my-rcmd.conf --debug 3" 
+ssh-rsa AAAABBBBBBBBCCCCCCCCCCCCCDDDDDDDD== root@blah.org
 
 Examples
 --------
@@ -225,7 +271,7 @@ This python program/script has a few dependencies. When using the Archlinux AUR,
 * python3
 * openssh
 * mbuffer
-* python3-magcode-core > 1.4.10 - on pypi.org
+* python3-magcode-core > 1.5.4 - on pypi.org
 * python3-psutil
 * python3-setproctitle
 
