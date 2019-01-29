@@ -185,10 +185,10 @@ class Manager(object):
         dst_endpoint = replicate_settings['endpoint'] if push else ''
         src_host = gethostname().split('.')[0] if push else replicate_settings['endpoint_host']
         local_dataset = src_dataset if push else dst_dataset
-        mode_full = replicate_settings['mode_full']
+        full_clone = replicate_settings['full_clone']
         send_compression = replicate_settings['send_compression']
         send_properties = replicate_settings['send_properties']
-        extra_args = {'mode_full': mode_full, 'send_compression': send_compression, 'send_properties': send_properties}
+        extra_args = {'full_clone': full_clone, 'send_compression': send_compression, 'send_properties': send_properties}
         log_info('[{0}] - Replicating [{1}]:{2}'.format(local_dataset, src_host, src_dataset))
         last_common_snapshot = None
         index_last_common_snapshot = None
@@ -202,7 +202,7 @@ class Manager(object):
             # Remove first element as it is already at other end
             snaps_to_send.pop(0)
             previous_snapshot = last_common_snapshot
-            if mode_full:
+            if full_clone:
                 prevsnap_name = src_snapshots[previous_snapshot]['name']
                 snapshot = list(src_snapshots)[-1]
                 snap_name = src_snapshots[snapshot]['name']
@@ -244,7 +244,7 @@ class Manager(object):
                     direction=replicate_dirN, compression=replicate_settings['compression'], **extra_args)
             ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
             ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
-            if mode_full:
+            if full_clone:
                 for snapshot in src_snapshosts:
                     dst_snapshots.update({snapshot:src_snapshots[snapshot]})
             else:
@@ -377,7 +377,7 @@ class Manager(object):
                             result = PROC_FAILURE
                             result = Manager.replicate(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
                             # Clean snapshots locally if one has been taken - only kept snapshots will allow aging
-                            #if not replicate_settings['mode_full']:
+                            #if not replicate_settings['full_clone']:
                             Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'],
                                     all_snapshots=dataset_settings['local_clean_all'])
                             # Post execution command
