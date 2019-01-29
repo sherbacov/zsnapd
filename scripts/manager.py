@@ -188,7 +188,9 @@ class Manager(object):
         full_clone = replicate_settings['full_clone']
         send_compression = replicate_settings['send_compression']
         send_properties = replicate_settings['send_properties']
-        extra_args = {'full_clone': full_clone, 'send_compression': send_compression, 'send_properties': send_properties}
+        all_snapshots = replicate_settings['all_snapshots']
+        extra_args = {'full_clone': full_clone, 'all_snapshots': all_snapshots,
+                'send_compression': send_compression, 'send_properties': send_properties}
         log_info('[{0}] - Replicating [{1}]:{2}'.format(local_dataset, src_host, src_dataset))
         last_common_snapshot = None
         index_last_common_snapshot = None
@@ -202,7 +204,7 @@ class Manager(object):
             # Remove first element as it is already at other end
             snaps_to_send.pop(0)
             previous_snapshot = last_common_snapshot
-            if full_clone:
+            if full_clone or all_snapshots:
                 prevsnap_name = src_snapshots[previous_snapshot]['name']
                 snapshot = list(src_snapshots)[-1]
                 snap_name = src_snapshots[snapshot]['name']
@@ -272,7 +274,7 @@ class Manager(object):
                     dataset_settings = ds_settings[dataset]
                     local_snapshots = snapshots.get(dataset, OrderedDict())
                     # Manage what snapshots we operate on - everything or zsnapd only
-                    if not dataset_settings['replicate_all']:
+                    if not dataset_settings['all_snapshots']:
                         for snapshot in local_snapshots:
                             snapshotname = local_snapshots[snapshot]['name']
                             if (re.match(SNAPSHOTNAME_REGEX, snapshotname)):
@@ -327,7 +329,7 @@ class Manager(object):
                         if (replicate is True):
                             remote_dataset = replicate_settings['target']
                             remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'],
-                                    all_snapshots=dataset_settings['replicate_all'])
+                                    all_snapshots=dataset_settings['all_snapshots'])
                             remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                             result = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
                             # Clean snapshots remotely if one has been taken - only kept snapshots will allow aging
@@ -350,7 +352,7 @@ class Manager(object):
                         remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
                         remote_datasets = ZFS.get_datasets(replicate_settings['endpoint'])
                         remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'],
-                                all_snapshots=dataset_settings['replicate_all'])
+                                all_snapshots=dataset_settings['all_snapshots'])
                         if remote_dataset not in remote_datasets:
                             log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
                             continue

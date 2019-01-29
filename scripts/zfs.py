@@ -97,8 +97,8 @@ class ZFS(object):
         Helper.run_command(command, '/')
 
     @staticmethod
-    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', compression=None, 
-            full_clone=False, send_compression=False, send_properties=False):
+    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', compression=None,
+            full_clone=False, all_snapshots=True, send_compression=False, send_properties=False):
         """
         Replicates a dataset towards a given endpoint/target (push)
         Replicates a dataset from a given endpoint to a local target (pull)
@@ -106,7 +106,7 @@ class ZFS(object):
 
         delta = ''
         if base_snapshot is not None:
-            if not full_clone:
+            if (not full_clone and not all_snapshots):
                 delta = '-i {0}@{1} '.format(dataset, base_snapshot)
             else:
                 delta = '-I {0}@{1} '.format(dataset, base_snapshot)
@@ -173,13 +173,14 @@ class ZFS(object):
             Helper.run_command(command, '/')
 
     @staticmethod
-    def get_size(dataset, base_snapshot, last_snapshot, endpoint='', full_clone=False, send_compression=False, send_properties=False):
+    def get_size(dataset, base_snapshot, last_snapshot, endpoint='',
+            full_clone=False, all_snapshots=True, send_compression=False, send_properties=False):
         """
         Executes a dry-run zfs send to calculate the size of the delta.
         """
         delta = ''
         if base_snapshot is not None:
-            if not full_clone:
+            if (not full_clone and not all_snapshots):
                 delta = '-i {0}@{1} '.format(dataset, base_snapshot)
             else:
                 delta = '-I {0}@{1} '.format(dataset, base_snapshot)
