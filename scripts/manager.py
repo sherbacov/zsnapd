@@ -330,6 +330,10 @@ class Manager(object):
                                     all_snapshots=dataset_settings['replicate_all'])
                             remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                             result = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
+                            # Clean snapshots remotely if one has been taken - only kept snapshots will allow aging
+                            if (dataset_settings['remote_schema']):
+                                Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['remote_schema'],
+                                        all_snapshots=dataset_settings['remote_clean_all'])
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/')

@@ -75,8 +75,10 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
         'local_schema': CLEANER_REGEX,
+        'remote_schema': CLEANER_REGEX,
         'clean_all': BOOLEAN_REGEX,
         'local_clean_all': BOOLEAN_REGEX,
+        'remote_clean_all': BOOLEAN_REGEX,
         'template': template_name_syntax,
         }
 DEFAULT_ENDPOINT_PORT = 22
@@ -229,8 +231,10 @@ class Config(object):
                                      'replicate': None,
                                      'schema': ds_config.get(dataset, 'schema'),
                                      'local_schema': ds_config.get(dataset, 'local_schema', fallback=None),
+                                     'remote_schema': ds_config.get(dataset, 'remote_schema', fallback=None),
                                      'clean_all': ds_config.get(dataset, 'clean_all', fallback=False),
                                      'local_clean_all': ds_config.get(dataset, 'local_clean_all', fallback=None),
+                                     'remote_clean_all': ds_config.get(dataset, 'remote_clean_all', fallback=None),
                                      'preexec': ds_config.get(dataset, 'preexec', fallback=None),
                                      'postexec': ds_config.get(dataset, 'postexec', fallback=None),
                                      'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None)}
@@ -238,6 +242,8 @@ class Config(object):
                     ds_settings[dataset]['local_schema'] = ds_settings[dataset]['schema']
                 if (ds_settings[dataset]['local_clean_all'] is None):
                     ds_settings[dataset]['local_clean_all'] = ds_settings[dataset]['clean_all']
+                if (ds_settings[dataset]['remote_clean_all'] is None):
+                    ds_settings[dataset]['remote_clean_all'] = ds_settings[dataset]['clean_all']
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')
