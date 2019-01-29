@@ -225,7 +225,7 @@ class Config(object):
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)
             for dataset in ds_config.sections():
-                old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True),
+                old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
                 ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
                                      'time': ds_config.get(dataset, 'time'),
                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',

@@ -209,7 +209,7 @@ class Manager(object):
                 snapshot = list(src_snapshots)[-1]
                 snap_name = src_snapshots[snapshot]['name']
                 # There is a snapshot on this host that is not yet on the other side.
-                size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint, **exra_args)
+                size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint, **extra_args)
                 log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                 ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                         direction=replicate_dirN, compression=replicate_settings['compression'], **extra_args)
