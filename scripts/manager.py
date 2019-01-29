@@ -177,7 +177,7 @@ class Manager(object):
         return result
 
     @staticmethod
-    def replicate_byparts(src_dataset, src_snapshots, dst_dataset, dst_snapshots, replicate_settings):
+    def replicate(src_dataset, src_snapshots, dst_dataset, dst_snapshots, replicate_settings):
         result = PROC_EXECUTED
         push = replicate_settings['target'] is not None
         replicate_dirN = 'push' if push else 'pull'
@@ -185,26 +185,48 @@ class Manager(object):
         dst_endpoint = replicate_settings['endpoint'] if push else ''
         src_host = gethostname().split('.')[0] if push else replicate_settings['endpoint_host']
         local_dataset = src_dataset if push else dst_dataset
+        mode_full = replicate_settings['mode_full']
+        send_compression = replicate_settings['send_compression']
+        send_properties = replicate_settings['send_properties']
+        extra_args = {'mode_full': mode_full, 'send_compression': send_compression, 'send_properties': send_properties}
         log_info('[{0}] - Replicating [{1}]:{2}'.format(local_dataset, src_host, src_dataset))
         last_common_snapshot = None
+        index_last_common_snapshot = None
         # Search for the last src snapshot that is available in dst
         for snapshot in src_snapshots:
             if snapshot in dst_snapshots:
                 last_common_snapshot = snapshot
+                index_last_common_snapshot = list(src_snapshots).index(snapshot)
         if last_common_snapshot is not None:  # There's a common snapshot
-            previous_snapshot = None
-            for snapshot in src_snapshots:
-                if snapshot == last_common_snapshot:
-                    previous_snapshot = last_common_snapshot
-                    continue
-                if previous_snapshot is not None:
+            snaps_to_send = list(src_snapshots)[index_last_common_snapshot:]
+            # Remove first element as it is already at other end
+            snaps_to_send.pop(0)
+            previous_snapshot = last_common_snapshot
+            if mode_full:
+                prevsnap_name = src_snapshots[previous_snapshot]['name']
+                snapshot = list(src_snapshots)[-1]
+                snap_name = src_snapshots[snapshot]['name']
+                # There is a snapshot on this host that is not yet on the other side.
+                size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint, **exra_args)
+                log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
+                ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
+                        direction=replicate_dirN, compression=replicate_settings['compression'], **extra_args)
+                ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
+                ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
+                ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint)
+                ZFS.release(dst_dataset, prevsnap_name, endpoint=dst_endpoint)
+                for snapshot in snaps_to_send:
+                    dst_snapshots.update({snapshot:src_snapshots[snapshot]})
+                result = PROC_CHANGED
+            else:
+                for snapshot in snaps_to_send:
                     prevsnap_name = src_snapshots[previous_snapshot]['name']
                     snap_name = src_snapshots[snapshot]['name']
                     # There is a snapshot on this host that is not yet on the other side.
-                    size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint)
+                    size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint, **extra_args)
                     log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                     ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
-                            direction=replicate_dirN, compression=replicate_settings['compression'])
+                            direction=replicate_dirN, compression=replicate_settings['compression'], **extra_args)
                     ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
                     ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
                     ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint)
@@ -216,13 +238,17 @@ class Manager(object):
             # No remote snapshot, full replication
             snapshot = list(src_snapshots)[-1]
             snap_name = src_snapshots[snapshot]['name']
-            size = ZFS.get_size(src_dataset, None, snap_name, endpoint=src_endpoint)
+            size = ZFS.get_size(src_dataset, None, snap_name, endpoint=src_endpoint, **extra_args)
             log_info('  {0}@         > {0}@{1} ({2})'.format(src_dataset, snap_name, size))
             ZFS.replicate(src_dataset, None, snap_name, dst_dataset, replicate_settings['endpoint'],
-                    direction=replicate_dirN, compression=replicate_settings['compression'])
+                    direction=replicate_dirN, compression=replicate_settings['compression'], **extra_args)
             ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
             ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
-            dst_snapshots.update({snapshot:src_snapshots[snapshot]})
+            if mode_full:
+                for snapshot in src_snapshosts:
+                    dst_snapshots.update({snapshot:src_snapshots[snapshot]})
+            else:
+                dst_snapshots.update({snapshot:src_snapshots[snapshot]})
             result = PROC_CHANGED
         log_info('[{0}] - Replicating [{1}]:{2} complete'.format(local_dataset, src_host, src_dataset))
         return result
@@ -294,7 +320,7 @@ class Manager(object):
                         # If network replicating, check connectivity here
                         test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
                         if test_unconnected:
-                            log_info("[{$0}] - Skipping as '{1}:{2}' unreachable"
+                            log_info("[{0}] - Skipping as '{1}:{2}' unreachable"
                                     .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
                             continue
 
@@ -303,7 +329,7 @@ class Manager(object):
                             remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'],
                                     all_snapshots=dataset_settings['replicate_all'])
                             remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
-                            result = Manager.replicate_byparts(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
+                            result = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
                             # Post execution command
                             if (result and dataset_settings['replicate_postexec'] is not None):
                                 Helper.run_command(dataset_settings['replicate_postexec'], '/')
@@ -345,8 +371,9 @@ class Manager(object):
 
                         if (replicate is True):
                             result = PROC_FAILURE
-                            result = Manager.replicate_byparts(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
+                            result = Manager.replicate(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
                             # Clean snapshots locally if one has been taken - only kept snapshots will allow aging
+                            #if not replicate_settings['mode_full']:
                             Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'],
                                     all_snapshots=dataset_settings['local_clean_all'])
                             # Post execution command

@@ -97,7 +97,8 @@ class ZFS(object):
         Helper.run_command(command, '/')
 
     @staticmethod
-    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', compression=None):
+    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', compression=None, 
+            mode_full=False, send_compression=False, send_properties=False):
         """
         Replicates a dataset towards a given endpoint/target (push)
         Replicates a dataset from a given endpoint to a local target (pull)
@@ -105,7 +106,21 @@ class ZFS(object):
 
         delta = ''
         if base_snapshot is not None:
-            delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            if not mode_full:
+                delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            else:
+                delta = '-I {0}@{1} '.format(dataset, base_snapshot)
+
+        send_args = ''
+        if send_compression:
+            send_args += 'ce'
+        if send_properties:
+            send_args += 'p'
+        if mode_full:
+            send_args += 'R'
+        if send_args:
+            send_args = '-' + send_args
+            send_args += ' '
 
         if compression is not None:
             compress = '| {0} -c'.format(compression)
@@ -116,19 +131,19 @@ class ZFS(object):
 
         if endpoint == '':
             # We're replicating to a local target
-            command = 'zfs send {0}{1}@{2} | zfs receive -F {3}'
-            command = command.format(delta, dataset, last_snapshot, target)
+            command = 'zfs send {0}{1}{2}@{3} | zfs receive -F {3}'
+            command = command.format(send_args, delta, dataset, last_snapshot, target)
             Helper.run_command(command, '/')
         else:
             if direction == 'push':
                 # We're replicating to a remote server
-                command = 'zfs send {0}{1}@{2} {3} | mbuffer -q -v 0 -s 128k -m 512M | {4} \'mbuffer -s 128k -m 512M {5} | zfs receive -F {6}\''
-                command = command.format(delta, dataset, last_snapshot, compress, endpoint, decompress, target)
+                command = 'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m 512M | {5} \'mbuffer -s 128k -m 512M {6} | zfs receive -F {7}\''
+                command = command.format(send_args, delta, dataset, last_snapshot, compress, endpoint, decompress, target)
                 Helper.run_command(command, '/')
             elif direction == 'pull':
                 # We're pulling from a remote server
-                command = '{4} \'zfs send {0}{1}@{2} {3} | mbuffer -q -v 0 -s 128k -m 512M\' | mbuffer -s 128k -m 512M {5} | zfs receive -F {6}'
-                command = command.format(delta, dataset, last_snapshot, compress, endpoint, decompress, target)
+                command = '{5} \'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m 512M\' | mbuffer -s 128k -m 512M {6} | zfs receive -F {7}'
+                command = command.format(send_args, delta, dataset, last_snapshot, compress, endpoint, decompress, target)
                 Helper.run_command(command, '/')
 
     @staticmethod
@@ -158,20 +173,34 @@ class ZFS(object):
             Helper.run_command(command, '/')
 
     @staticmethod
-    def get_size(dataset, base_snapshot, last_snapshot, endpoint=''):
+    def get_size(dataset, base_snapshot, last_snapshot, endpoint='', mode_full=False, send_compression=False, send_properties=False):
         """
         Executes a dry-run zfs send to calculate the size of the delta.
         """
         delta = ''
         if base_snapshot is not None:
-            delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            if not mode_full:
+                delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            else:
+                delta = '-I {0}@{1} '.format(dataset, base_snapshot)
+
+        send_args = ''
+        if send_compression:
+            send_args += 'ce'
+        if send_properties:
+            send_args += 'p'
+        if mode_full:
+            send_args += 'R'
+        if send_args:
+            send_args = '-' + send_args
+            send_args += ' '
 
         if endpoint == '':
-            command = 'zfs send -nv {0}{1}@{2}'
-            command = command.format(delta, dataset, last_snapshot)
+            command = 'zfs send -nv {0}{1}{2}@{3}'
+            command = command.format(send_args, delta, dataset, last_snapshot)
         else:
-            command = '{0} \'zfs send -nv {1}{2}@{3}\''
-            command = command.format(endpoint, delta, dataset, last_snapshot)
+            command = '{0} \'zfs send -nv {1}{2}{3}@{4}\''
+            command = command.format(endpoint, send_args, delta, dataset, last_snapshot)
         command = '{0} 2>&1 | grep \'total estimated size is\''.format(command)
         output = Helper.run_command(command, '/')
         size = output.strip().split(' ')[-1]
