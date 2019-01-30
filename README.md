@@ -147,6 +147,8 @@ Examples
     snapshot = False
     replicate_source = zpool/data
     schema = 7d3w11m4y
+    replicate_full_clone = True
+    buffer_size = 128M
 
 A summary of the different options:
 
@@ -159,6 +161,11 @@ A summary of the different options:
 * replicate_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
 * replicate_target: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
 * replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
+* replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
+* replicate_send_compression: zfs send using compressed data from disk
+* replicate_send_properties: zfs send sends all properties of dataset
+* replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
+* buffer_size: Give mbuffer buffer size in units of k, M, and G - kilobytes, Megabytes, and Gigabytes respectively.
 * compression: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
 * schema: In case the snapshots should be cleaned, this is the schema the manager will use to clean.
 * local_schema: For local snapshot cleaning/aging when dataset is receptical for remote source when snapshots are pulled
@@ -168,6 +175,7 @@ A summary of the different options:
 * clean_all: Clean/age all snapshots in dataset - default is False - ie zsnapd only
 * local_clean_all: Setting for local dataset when replicating source is remote
 * all_snapshots: Replicate all snapshots in dataset - Default is True - ie all snapshots in dataset
+* replicate_all: Deprecated.  Use all_snapshots
 * log_commands: Per dataset log all commands executed for the dataset to DEBUG.  For checking what the program is doing exactly, helpful for auditing and security. 
 
 Naming convention
