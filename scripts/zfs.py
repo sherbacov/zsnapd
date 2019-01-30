@@ -138,12 +138,12 @@ class ZFS(object):
         else:
             if direction == 'push':
                 # We're replicating to a remote server
-                command = 'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {5} | {6} \'mbuffer -s 128k -m {5} {7} | zfs receive -F {8}\''
+                command = 'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {5} | {6} \'mbuffer -q -v 0 -s 128k -m {5} {7} | zfs receive -F {8}\''
                 command = command.format(send_args, delta, dataset, last_snapshot, compress, buffer_size, endpoint, decompress, target)
                 Helper.run_command(command, '/', log_command=log_command)
             elif direction == 'pull':
                 # We're pulling from a remote server
-                command = '{5} \'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {6}\' | mbuffer -s 128k -m {6} {7} | zfs receive -F {8}'
+                command = '{5} \'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {6}\' | mbuffer -q -v 0 -s 128k -m {6} {7} | zfs receive -F {8}'
                 command = command.format(send_args, delta, dataset, last_snapshot, compress, endpoint, buffer_size, decompress, target)
                 Helper.run_command(command, '/', log_command=log_command)
 
