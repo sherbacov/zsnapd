@@ -275,126 +275,127 @@ class Manager(object):
         datasets = ZFS.get_datasets()
         is_connected = IsConnected()
         for dataset in datasets:
-            if dataset in ds_settings:
-                try:
-                    dataset_settings = ds_settings[dataset]
-                    log_command = dataset_settings['log_commands']
-                    local_snapshots = snapshots.get(dataset, OrderedDict())
-                    # Manage what snapshots we operate on - everything or zsnapd only
-                    if not dataset_settings['all_snapshots']:
-                        for snapshot in local_snapshots:
-                            snapshotname = local_snapshots[snapshot]['name']
-                            if (re.match(SNAPSHOTNAME_REGEX, snapshotname)):
-                                continue
-                            local_snapshots.pop(snapshot)
+            if dataset not in ds_settings:
+                continue
+            try:
+                dataset_settings = ds_settings[dataset]
+                log_command = dataset_settings['log_commands']
+                local_snapshots = snapshots.get(dataset, OrderedDict())
+                # Manage what snapshots we operate on - everything or zsnapd only
+                if not dataset_settings['all_snapshots']:
+                    for snapshot in local_snapshots:
+                        snapshotname = local_snapshots[snapshot]['name']
+                        if (re.match(SNAPSHOTNAME_REGEX, snapshotname)):
+                            continue
+                        local_snapshots.pop(snapshot)
 
-                    take_snapshot = dataset_settings['snapshot'] is True
-                    replicate = dataset_settings['replicate'] is not None
+                take_snapshot = dataset_settings['snapshot'] is True
+                replicate = dataset_settings['replicate'] is not None
 
-                    # Decide whether we need to handle this dataset
-                    if not take_snapshot and not replicate:
+                # Decide whether we need to handle this dataset
+                if not take_snapshot and not replicate:
+                    continue
+                if dataset_settings['time'] == 'trigger':
+                    # We wait until we find a trigger file in the filesystem
+                    trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
+                    if os.path.exists(trigger_filename):
+                        log_info('[{0}] - Trigger found on {1}'.format(dataset, dataset))
+                        os.remove(trigger_filename)
+                    else:
                         continue
-                    if dataset_settings['time'] == 'trigger':
-                        # We wait until we find a trigger file in the filesystem
-                        trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
-                        if os.path.exists(trigger_filename):
-                            log_info('[{0}] - Trigger found on {1}'.format(dataset, dataset))
-                            os.remove(trigger_filename)
-                        else:
-                            continue
-                    else:
-                        if not meter_time.has_time_passed(dataset_settings['time'], now):
-                            continue
-                        log_info('[{0}] - Time passed for {1}'.format(dataset, dataset))
+                else:
+                    if not meter_time.has_time_passed(dataset_settings['time'], now):
+                        continue
+                    log_info('[{0}] - Time passed for {1}'.format(dataset, dataset))
 
-                    replicate_settings = dataset_settings['replicate']
-                    push = replicate_settings['target'] is not None if replicate else True
-                    if push:
-                        # Pre exectution command
-                        if dataset_settings['preexec'] is not None:
-                            Helper.run_command(dataset_settings['preexec'], '/', log_command=log_command)
+                replicate_settings = dataset_settings['replicate']
+                push = replicate_settings['target'] is not None if replicate else True
+                if push:
+                    # Pre exectution command
+                    if dataset_settings['preexec'] is not None:
+                        Helper.run_command(dataset_settings['preexec'], '/', log_command=log_command)
 
-                        result = PROC_FAILURE
-                        if (take_snapshot is True and this_time not in local_snapshots):
-                            result = Manager.snapshot(dataset, local_snapshots, now, log_command=log_command)
-                        # Clean snapshots if one has been taken - clean will not execute
-                        # if no snapshot taken
-                        Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'], log_command=log_command,
-                                all_snapshots=dataset_settings['clean_all'])
-                        # Execute postexec command
-                        if result and dataset_settings['postexec'] is not None:
-                                Helper.run_command(dataset_settings['postexec'], '/', log_command=log_command)
+                    result = PROC_FAILURE
+                    if (take_snapshot is True and this_time not in local_snapshots):
+                        result = Manager.snapshot(dataset, local_snapshots, now, log_command=log_command)
+                    # Clean snapshots if one has been taken - clean will not execute
+                    # if no snapshot taken
+                    Cleaner.clean(dataset, local_snapshots, dataset_settings['schema'], log_command=log_command,
+                            all_snapshots=dataset_settings['clean_all'])
+                    # Execute postexec command
+                    if result and dataset_settings['postexec'] is not None:
+                            Helper.run_command(dataset_settings['postexec'], '/', log_command=log_command)
 
-                        # Replicating, if required
-                        # If network replicating, check connectivity here
-                        test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
-                        if test_unconnected:
-                            log_info("[{0}] - Skipping as '{1}:{2}' unreachable"
-                                    .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
-                            continue
+                    # Replicating, if required
+                    # If network replicating, check connectivity here
+                    test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
+                    if test_unconnected:
+                        log_info("[{0}] - Skipping as '{1}:{2}' unreachable"
+                                .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
+                        continue
 
-                        if (replicate is True):
-                            remote_dataset = replicate_settings['target']
-                            remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
-                                    all_snapshots=dataset_settings['all_snapshots'])
-                            remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
-                            result = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
-                            # Clean snapshots remotely if one has been taken - only kept snapshots will allow aging
-                            if (dataset_settings['remote_schema']):
-                                Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['remote_schema'], log_command=log_command,
-                                        all_snapshots=dataset_settings['remote_clean_all'])
-                            # Post execution command
-                            if (result and dataset_settings['replicate_postexec'] is not None):
-                                Helper.run_command(dataset_settings['replicate_postexec'], '/', log_command=log_command)
-                    else:
-                        # Pull logic for remote site
-                        # Replicating, if required
-                        # If network replicating, check connectivity here
-                        test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
-                        if test_unconnected:
-                            log_warn("[{$0}] - Skipping as '{1}:{2}' unreachable"
-                                    .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
-                            continue
-                        
-                        remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
-                        remote_datasets = ZFS.get_datasets(replicate_settings['endpoint'], log_command=log_command)
+                    if (replicate is True):
+                        remote_dataset = replicate_settings['target']
                         remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
                                 all_snapshots=dataset_settings['all_snapshots'])
-                        if remote_dataset not in remote_datasets:
-                            log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
-                            continue
                         remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
-                        endpoint = replicate_settings['endpoint']
-                        if (take_snapshot is True and this_time not in remote_snapshots):
-                            # Only execute everything here if needed
+                        result = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
+                        # Clean snapshots remotely if one has been taken - only kept snapshots will allow aging
+                        if (dataset_settings['remote_schema']):
+                            Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['remote_schema'], log_command=log_command,
+                                    all_snapshots=dataset_settings['remote_clean_all'])
+                        # Post execution command
+                        if (result and dataset_settings['replicate_postexec'] is not None):
+                            Helper.run_command(dataset_settings['replicate_postexec'], '/', log_command=log_command)
+                else:
+                    # Pull logic for remote site
+                    # Replicating, if required
+                    # If network replicating, check connectivity here
+                    test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
+                    if test_unconnected:
+                        log_warn("[{$0}] - Skipping as '{1}:{2}' unreachable"
+                                .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
+                        continue
+                    
+                    remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
+                    remote_datasets = ZFS.get_datasets(replicate_settings['endpoint'], log_command=log_command)
+                    remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
+                            all_snapshots=dataset_settings['all_snapshots'])
+                    if remote_dataset not in remote_datasets:
+                        log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
+                        continue
+                    remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
+                    endpoint = replicate_settings['endpoint']
+                    if (take_snapshot is True and this_time not in remote_snapshots):
+                        # Only execute everything here if needed
 
-                            # Remote Pre exectution command
-                            if dataset_settings['preexec'] is not None:
-                                Helper.run_command(dataset_settings['preexec'], '/', endpoint=endpoint, log_command=log_command)
+                        # Remote Pre exectution command
+                        if dataset_settings['preexec'] is not None:
+                            Helper.run_command(dataset_settings['preexec'], '/', endpoint=endpoint, log_command=log_command)
 
-                            # Take remote snapshot
-                            result = PROC_FAILURE
-                            result = Manager.snapshot(remote_dataset, remote_snapshots, now, endpoint=endpoint, local_dataset=dataset, log_command=log_command)
-                            # Clean remote snapshots if one has been taken - only kept snapshots will aging to happen
-                            Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['schema'], log_command=log_command,
-                                    endpoint=endpoint, local_dataset=dataset, all_snapshots=dataset_settings['clean_all'])
-                            # Execute remote postexec command
-                            if result and dataset_settings['postexec'] is not None:
-                                    Helper.run_command(dataset_settings['postexec'], '/', endpoint=endpoint, log_command=log_command)
+                        # Take remote snapshot
+                        result = PROC_FAILURE
+                        result = Manager.snapshot(remote_dataset, remote_snapshots, now, endpoint=endpoint, local_dataset=dataset, log_command=log_command)
+                        # Clean remote snapshots if one has been taken - only kept snapshots will aging to happen
+                        Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['schema'], log_command=log_command,
+                                endpoint=endpoint, local_dataset=dataset, all_snapshots=dataset_settings['clean_all'])
+                        # Execute remote postexec command
+                        if result and dataset_settings['postexec'] is not None:
+                                Helper.run_command(dataset_settings['postexec'], '/', endpoint=endpoint, log_command=log_command)
 
-                        if (replicate is True):
-                            result = PROC_FAILURE
-                            result = Manager.replicate(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
-                            # Clean snapshots locally if one has been taken - only kept snapshots will allow aging
-                            #if not replicate_settings['full_clone']:
-                            Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'], log_command=log_command,
-                                    all_snapshots=dataset_settings['local_clean_all'])
-                            # Post execution command
-                            if (result and dataset_settings['replicate_postexec'] is not None):
-                                Helper.run_command(dataset_settings['replicate_postexec'], '/', endpoint=endpoint, log_command=log_command)
+                    if (replicate is True):
+                        result = PROC_FAILURE
+                        result = Manager.replicate(remote_dataset, remote_snapshots, dataset, local_snapshots, replicate_settings)
+                        # Clean snapshots locally if one has been taken - only kept snapshots will allow aging
+                        #if not replicate_settings['full_clone']:
+                        Cleaner.clean(dataset, local_snapshots, dataset_settings['local_schema'], log_command=log_command,
+                                all_snapshots=dataset_settings['local_clean_all'])
+                        # Post execution command
+                        if (result and dataset_settings['replicate_postexec'] is not None):
+                            Helper.run_command(dataset_settings['replicate_postexec'], '/', endpoint=endpoint, log_command=log_command)
 
-                except Exception as ex:
-                    log_error('[{0}] - Exception: {1}'.format(dataset, str(ex)))
+            except Exception as ex:
+                log_error('[{0}] - Exception: {1}'.format(dataset, str(ex)))
 
         # Clean up
         del is_connected
