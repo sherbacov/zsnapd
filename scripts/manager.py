@@ -39,6 +39,7 @@ from scripts.clean import Cleaner
 from scripts.helper import Helper
 from scripts.config import MeterTime
 from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
+from scripts.globals_ import SNAPSHOTNAME_REGEX
 
 PROC_FAILURE = 0
 PROC_EXECUTED = 1
