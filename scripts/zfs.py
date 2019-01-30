@@ -27,7 +27,10 @@ import time
 import re
 from collections import OrderedDict
 
-from magcode.core.globals_ import log_debug, log_info, log_error
+from magcode.core.globals_ import log_debug
+from magcode.core.globals_ import log_info
+from magcode.core.globals_ import log_error
+from magcode.core.globals_ import debug_verbose
 
 from scripts.globals_ import SNAPSHOTNAME_REGEX
 from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
@@ -129,6 +132,10 @@ class ZFS(object):
         else:
             compress = ''
             decompress = ''
+
+        if debug_verbose():
+            # Log these commands if verbose debug
+            log_command = True
 
         if endpoint == '':
             # We're replicating to a local target
