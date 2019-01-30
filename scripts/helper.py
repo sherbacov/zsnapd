@@ -27,6 +27,11 @@ import re
 import sys
 from subprocess import Popen, PIPE
 
+from magcode.core.globals_ import debug_verbose
+from magcode.core.globals_ import log_debug
+from magcode.core.globals_ import log_info
+from magcode.core.globals_ import log_error
+
 
 class Helper(object):
     """
