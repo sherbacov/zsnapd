@@ -48,7 +48,7 @@ class Helper(object):
         else:
             command = "{0} '{1}'".format(endpoint, command)
         if log_command:
-            log_info("Executing command: '{0}'".format(command))
+            log_debug("Executing command: '{0}'".format(command))
         elif debug_extreme():
             log_debug("Executing command: '{0}'".format(command))
         pattern = re.compile(r'[^\n\t@ a-zA-Z0-9_\\.:/\-]+')
