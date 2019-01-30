@@ -34,7 +34,8 @@ import configparser
 from magcode.core.globals_ import *
 from magcode.core.utility import MagCodeConfigError
 
-from scripts.clean import CLEANER_REGEX
+from scripts.globals_ import CLEANER_REGEX
+from scripts.globals_ import DEFAULT_BUFFER_SIZE
 
 TMP_HRMIN_REGEX = r'([0-1]*\d|2[0-3]):([0-5]\d)'
 TM_HRMIN_REGEX = r'^' + TMP_HRMIN_REGEX + r'$'
@@ -55,6 +56,7 @@ NETCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]*$'
 HOST_REGEX = r'^[0-9a-zA-Z\[][-_.:a-zA-Z0-9\]]*$'
 PORT_REGEX = r'^[0-9]{1,5}$'
 USER_REGEX = r'^[a-zA-Z][-_.a-zA-Z0-9]*$'
+BUFFER_SIZE_REGEX = r'[0-9]{1,12}[kMG]'
 ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate': BOOLEAN_REGEX,
         'time': TIME_REGEX,
@@ -73,6 +75,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_endpoint_host': HOST_REGEX,
         'replicate_endpoint_port': PORT_REGEX,
         'replicate_endpoint_command': SHELLFORMAT_REGEX,
+        'buffer_size': BUFFER_SIZE_REGEX,
         'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
         'local_schema': CLEANER_REGEX,
@@ -84,6 +87,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         }
 DEFAULT_ENDPOINT_PORT = 22
 DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
+
 
 def _check_time_syntax(section_name, item, time_spec):
     """
@@ -268,6 +272,7 @@ class Config(object):
                                                       'full_clone': ds_config.getboolean(dataset, 'replicate_full_clone', fallback=False),
                                                       'send_compression': ds_config.getboolean(dataset, 'replicate_send_compression', fallback=False),
                                                       'send_properties': ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False),
+                                                      'buffer_size': ds_config.get(dataset, 'buffer_size', fallback=DEFAULT_BUFFER_SIZE),
                                                       'endpoint_host': host,
                                                       'endpoint_port': port}
        

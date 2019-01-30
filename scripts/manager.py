@@ -189,8 +189,11 @@ class Manager(object):
         send_compression = replicate_settings['send_compression']
         send_properties = replicate_settings['send_properties']
         all_snapshots = replicate_settings['all_snapshots']
+        buffer_size = replicate_settings['buffer_size']
+        compression = replicate_settings['compression']
         extra_args = {'full_clone': full_clone, 'all_snapshots': all_snapshots,
-                'send_compression': send_compression, 'send_properties': send_properties}
+                'send_compression': send_compression, 'send_properties': send_properties,
+                'buffer_size': buffer_size, 'compression': compression }
         log_info('[{0}] - Replicating [{1}]:{2}'.format(local_dataset, src_host, src_dataset))
         last_common_snapshot = None
         index_last_common_snapshot = None
@@ -212,7 +215,7 @@ class Manager(object):
                 size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint, **extra_args)
                 log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                 ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
-                        direction=replicate_dirN, compression=replicate_settings['compression'], **extra_args)
+                        direction=replicate_dirN, **extra_args)
                 ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
                 ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
                 ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint)
@@ -228,7 +231,7 @@ class Manager(object):
                     size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint, **extra_args)
                     log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                     ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
-                            direction=replicate_dirN, compression=replicate_settings['compression'], **extra_args)
+                            direction=replicate_dirN, **extra_args)
                     ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint)
                     ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint)
                     ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint)
