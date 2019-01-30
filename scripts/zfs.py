@@ -27,10 +27,14 @@ import time
 import re
 from collections import OrderedDict
 
-from magcode.core.globals_ import log_debug, log_info, log_error
+from magcode.core.globals_ import log_debug
+from magcode.core.globals_ import log_info
+from magcode.core.globals_ import log_error
+from magcode.core.globals_ import debug_verbose
 
 from scripts.globals_ import SNAPSHOTNAME_REGEX
 from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
+from scripts.globals_ import DEFAULT_BUFFER_SIZE
 from scripts.helper import Helper
 
 
@@ -40,7 +44,7 @@ class ZFS(object):
     """
 
     @staticmethod
-    def get_snapshots(dataset='', endpoint='', all_snapshots=True):
+    def get_snapshots(dataset='', endpoint='', all_snapshots=True, log_command=False):
         """
         Retreives a list of snapshots
         """
@@ -53,7 +57,7 @@ class ZFS(object):
             dataset_filter = ''
         else:
             dataset_filter = ' | grep ^{0}@'.format(dataset)
-        output = Helper.run_command(command.format(endpoint, dataset_filter), '/')
+        output = Helper.run_command(command.format(endpoint, dataset_filter), '/', log_command=log_command)
         snapshots = {}
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
@@ -70,7 +74,7 @@ class ZFS(object):
         return snapshots
 
     @staticmethod
-    def get_datasets(endpoint=''):
+    def get_datasets(endpoint='', log_command=False):
         """
         Retreives all datasets
         """
@@ -78,7 +82,7 @@ class ZFS(object):
             command = 'zfs list -H'
         else:
             command = "{0} 'zfs list -H'"
-        output = Helper.run_command(command.format(endpoint), '/')
+        output = Helper.run_command(command.format(endpoint), '/', log_command=log_command)
         datasets = []
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
@@ -86,7 +90,7 @@ class ZFS(object):
         return datasets
 
     @staticmethod
-    def snapshot(dataset, name, endpoint=''):
+    def snapshot(dataset, name, endpoint='', log_command=False):
         """
         Takes a snapshot
         """
@@ -94,10 +98,11 @@ class ZFS(object):
             command = 'zfs snapshot {0}@{1}'.format(dataset, name)
         else:
             command = "{0} 'zfs snapshot {1}@{2}'".format(endpoint, dataset, name)
-        Helper.run_command(command, '/')
+        Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
-    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', compression=None):
+    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', buffer_size=DEFAULT_BUFFER_SIZE, compression=None,
+            full_clone=False, all_snapshots=True, send_compression=False, send_properties=False, log_command=False):
         """
         Replicates a dataset towards a given endpoint/target (push)
         Replicates a dataset from a given endpoint to a local target (pull)
@@ -105,7 +110,21 @@ class ZFS(object):
 
         delta = ''
         if base_snapshot is not None:
-            delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            if (not full_clone and not all_snapshots):
+                delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            else:
+                delta = '-I {0}@{1} '.format(dataset, base_snapshot)
+
+        send_args = ''
+        if send_compression:
+            send_args += 'ce'
+        if send_properties:
+            send_args += 'p'
+        if full_clone:
+            send_args += 'R'
+        if send_args:
+            send_args = '-' + send_args
+            send_args += ' '
 
         if compression is not None:
             compress = '| {0} -c'.format(compression)
@@ -114,73 +133,93 @@ class ZFS(object):
             compress = ''
             decompress = ''
 
+        if debug_verbose():
+            # Log these commands if verbose debug
+            log_command = True
+
         if endpoint == '':
             # We're replicating to a local target
-            command = 'zfs send {0}{1}@{2} | zfs receive -F {3}'
-            command = command.format(delta, dataset, last_snapshot, target)
-            Helper.run_command(command, '/')
+            command = 'zfs send {0}{1}{2}@{3} | zfs receive -F {3}'
+            command = command.format(send_args, delta, dataset, last_snapshot, target)
+            Helper.run_command(command, '/', log_command=log_command)
         else:
             if direction == 'push':
                 # We're replicating to a remote server
-                command = 'zfs send {0}{1}@{2} {3} | mbuffer -q -v 0 -s 128k -m 512M | {4} \'mbuffer -s 128k -m 512M {5} | zfs receive -F {6}\''
-                command = command.format(delta, dataset, last_snapshot, compress, endpoint, decompress, target)
-                Helper.run_command(command, '/')
+                command = 'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {5} | {6} \'mbuffer -q -v 0 -s 128k -m {5} {7} | zfs receive -F {8}\''
+                command = command.format(send_args, delta, dataset, last_snapshot, compress, buffer_size, endpoint, decompress, target)
+                Helper.run_command(command, '/', log_command=log_command)
             elif direction == 'pull':
                 # We're pulling from a remote server
-                command = '{4} \'zfs send {0}{1}@{2} {3} | mbuffer -q -v 0 -s 128k -m 512M\' | mbuffer -s 128k -m 512M {5} | zfs receive -F {6}'
-                command = command.format(delta, dataset, last_snapshot, compress, endpoint, decompress, target)
-                Helper.run_command(command, '/')
+                command = '{5} \'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {6}\' | mbuffer -q -v 0 -s 128k -m {6} {7} | zfs receive -F {8}'
+                command = command.format(send_args, delta, dataset, last_snapshot, compress, endpoint, buffer_size, decompress, target)
+                Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
-    def is_held(target, snapshot, endpoint=''):
+    def is_held(target, snapshot, endpoint='', log_command=False):
         if endpoint == '':
             command = 'zfs holds {0}@{1}'.format(target, snapshot)
-            return 'zsm' in Helper.run_command(command, '/')
+            return 'zsm' in Helper.run_command(command, '/', log_command=log_command)
         command = '{0} \'zfs holds {1}@{2}\''.format(endpoint, target, snapshot)
-        return 'zsm' in Helper.run_command(command, '/')
+        return 'zsm' in Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
-    def hold(target, snapshot, endpoint=''):
+    def hold(target, snapshot, endpoint='', log_command=False):
         if endpoint == '':
             command = 'zfs hold zsm {0}@{1}'.format(target, snapshot)
-            Helper.run_command(command, '/')
+            Helper.run_command(command, '/', log_command=log_command)
         else:
             command = '{0} \'zfs hold zsm {1}@{2}\''.format(endpoint, target, snapshot)
-            Helper.run_command(command, '/')
+            Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
-    def release(target, snapshot, endpoint=''):
+    def release(target, snapshot, endpoint='', log_command=False):
         if endpoint == '':
             command = 'zfs release zsm {0}@{1} || true'.format(target, snapshot)
-            Helper.run_command(command, '/')
+            Helper.run_command(command, '/', log_command=log_command)
         else:
             command = '{0} \'zfs release zsm {1}@{2} || true\''.format(endpoint, target, snapshot)
-            Helper.run_command(command, '/')
+            Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
-    def get_size(dataset, base_snapshot, last_snapshot, endpoint=''):
+    def get_size(dataset, base_snapshot, last_snapshot, endpoint='', buffer_size=DEFAULT_BUFFER_SIZE,
+            compression=None, full_clone=False, all_snapshots=True, send_compression=False,
+            send_properties=False, log_command=False):
         """
         Executes a dry-run zfs send to calculate the size of the delta.
         """
         delta = ''
         if base_snapshot is not None:
-            delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            if (not full_clone and not all_snapshots):
+                delta = '-i {0}@{1} '.format(dataset, base_snapshot)
+            else:
+                delta = '-I {0}@{1} '.format(dataset, base_snapshot)
+
+        send_args = ''
+        if send_compression:
+            send_args += 'ce'
+        if send_properties:
+            send_args += 'p'
+        if full_clone:
+            send_args += 'R'
+        if send_args:
+            send_args = '-' + send_args
+            send_args += ' '
 
         if endpoint == '':
-            command = 'zfs send -nv {0}{1}@{2}'
-            command = command.format(delta, dataset, last_snapshot)
+            command = 'zfs send -nv {0}{1}{2}@{3}'
+            command = command.format(send_args, delta, dataset, last_snapshot)
         else:
-            command = '{0} \'zfs send -nv {1}{2}@{3}\''
-            command = command.format(endpoint, delta, dataset, last_snapshot)
+            command = '{0} \'zfs send -nv {1}{2}{3}@{4}\''
+            command = command.format(endpoint, send_args, delta, dataset, last_snapshot)
         command = '{0} 2>&1 | grep \'total estimated size is\''.format(command)
-        output = Helper.run_command(command, '/')
+        output = Helper.run_command(command, '/', log_command=log_command)
         size = output.strip().split(' ')[-1]
         if size[-1].isdigit():
             return '{0}B'.format(size)
         return '{0}iB'.format(size)
 
     @staticmethod
-    def destroy(dataset, snapshot, endpoint=''):
+    def destroy(dataset, snapshot, endpoint='', log_command=False):
         """
         Destroyes a dataset
         """
@@ -188,4 +227,4 @@ class ZFS(object):
             command = 'zfs destroy {0}@{1}'.format(dataset, snapshot)
         else:
             command = "{0} 'zfs destroy {1}@{2}'".format(endpoint, dataset, snapshot)
-        Helper.run_command(command, '/')
+        Helper.run_command(command, '/', log_command=log_command)

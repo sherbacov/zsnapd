@@ -34,7 +34,8 @@ import configparser
 from magcode.core.globals_ import *
 from magcode.core.utility import MagCodeConfigError
 
-from scripts.clean import CLEANER_REGEX
+from scripts.globals_ import CLEANER_REGEX
+from scripts.globals_ import DEFAULT_BUFFER_SIZE
 
 TMP_HRMIN_REGEX = r'([0-1]*\d|2[0-3]):([0-5]\d)'
 TM_HRMIN_REGEX = r'^' + TMP_HRMIN_REGEX + r'$'
@@ -55,13 +56,19 @@ NETCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]*$'
 HOST_REGEX = r'^[0-9a-zA-Z\[][-_.:a-zA-Z0-9\]]*$'
 PORT_REGEX = r'^[0-9]{1,5}$'
 USER_REGEX = r'^[a-zA-Z][-_.a-zA-Z0-9]*$'
+BUFFER_SIZE_REGEX = r'[0-9]{1,12}[kMG]'
 ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate': BOOLEAN_REGEX,
         'time': TIME_REGEX,
         'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
         'preexec': SHELLCMD_REGEX,
         'postexec': SHELLCMD_REGEX,
+        'log_commands': BOOLEAN_REGEX,
         'replicate_all': BOOLEAN_REGEX,
+        'all_snapshots': BOOLEAN_REGEX,
+        'replicate_full_clone': BOOLEAN_REGEX,
+        'replicate_send_compression': BOOLEAN_REGEX,
+        'replicate_send_properties': BOOLEAN_REGEX,
         'replicate_postexec': SHELLCMD_REGEX,
         'replicate_target': ds_name_syntax,
         'replicate_source': ds_name_syntax,
@@ -69,15 +76,19 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_endpoint_host': HOST_REGEX,
         'replicate_endpoint_port': PORT_REGEX,
         'replicate_endpoint_command': SHELLFORMAT_REGEX,
+        'buffer_size': BUFFER_SIZE_REGEX,
         'compression': PATH_REGEX,
         'schema': CLEANER_REGEX,
         'local_schema': CLEANER_REGEX,
+        'remote_schema': CLEANER_REGEX,
         'clean_all': BOOLEAN_REGEX,
         'local_clean_all': BOOLEAN_REGEX,
+        'remote_clean_all': BOOLEAN_REGEX,
         'template': template_name_syntax,
         }
 DEFAULT_ENDPOINT_PORT = 22
 DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
+
 
 def _check_time_syntax(section_name, item, time_spec):
     """
@@ -219,22 +230,29 @@ class Config(object):
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)
             for dataset in ds_config.sections():
+                old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
                 ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
                                      'time': ds_config.get(dataset, 'time'),
-                                     'replicate_all': ds_config.get(dataset, 'replicate_all', fallback=True),
+                                     'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
+                                         fallback=old_setting_repl_all),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
                                      'replicate': None,
                                      'schema': ds_config.get(dataset, 'schema'),
                                      'local_schema': ds_config.get(dataset, 'local_schema', fallback=None),
+                                     'remote_schema': ds_config.get(dataset, 'remote_schema', fallback=None),
                                      'clean_all': ds_config.get(dataset, 'clean_all', fallback=False),
                                      'local_clean_all': ds_config.get(dataset, 'local_clean_all', fallback=None),
+                                     'remote_clean_all': ds_config.get(dataset, 'remote_clean_all', fallback=None),
                                      'preexec': ds_config.get(dataset, 'preexec', fallback=None),
                                      'postexec': ds_config.get(dataset, 'postexec', fallback=None),
-                                     'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None)}
+                                     'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None),
+                                     'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False)}
                 if (ds_settings[dataset]['local_schema'] is None):
                     ds_settings[dataset]['local_schema'] = ds_settings[dataset]['schema']
                 if (ds_settings[dataset]['local_clean_all'] is None):
                     ds_settings[dataset]['local_clean_all'] = ds_settings[dataset]['clean_all']
+                if (ds_settings[dataset]['remote_clean_all'] is None):
+                    ds_settings[dataset]['remote_clean_all'] = ds_settings[dataset]['clean_all']
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')
@@ -250,7 +268,14 @@ class Config(object):
                     ds_settings[dataset]['replicate'] = {'endpoint': endpoint,
                                                       'target': ds_config.get(dataset, 'replicate_target', fallback=None),
                                                       'source': ds_config.get(dataset, 'replicate_source', fallback=None),
+                                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
+                                                            fallback=old_setting_repl_all),
                                                       'compression': ds_config.get(dataset, 'compression', fallback=None),
+                                                      'full_clone': ds_config.getboolean(dataset, 'replicate_full_clone', fallback=False),
+                                                      'send_compression': ds_config.getboolean(dataset, 'replicate_send_compression', fallback=False),
+                                                      'send_properties': ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False),
+                                                      'buffer_size': ds_config.get(dataset, 'buffer_size', fallback=DEFAULT_BUFFER_SIZE),
+                                                      'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False),
                                                       'endpoint_host': host,
                                                       'endpoint_port': port}
        

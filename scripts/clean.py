@@ -44,7 +44,7 @@ class Cleaner(object):
     logger = None  # The manager will fill this object
 
     @staticmethod
-    def clean(dataset, snapshots, schema, endpoint='', local_dataset='', all_snapshots=False, return_no_keep=True):
+    def clean(dataset, snapshots, schema, endpoint='', local_dataset='', all_snapshots=False, return_no_keep=True, log_command=False):
         local_dataset = local_dataset if local_dataset else dataset
         now = time.localtime()
         midnight = time.mktime(time.strptime('{0}-{1}-{2}'.format(now.tm_year, now.tm_mon, now.tm_mday) , '%Y-%m-%d'))
@@ -69,7 +69,7 @@ class Cleaner(object):
             if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
                 # If required, only clean zsnapd snapshots
                 continue
-            if ZFS.is_held(dataset, snapshotname, endpoint):
+            if ZFS.is_held(dataset, snapshotname, endpoint, log_command=log_command):
                 log_debug('[{0}]   - Ignoring and keeping {1}@{2} - held snapshot'
                         .format(local_dataset, dataset, snapshotname))
                 held_snapshots.update({snapshot:snapshots[snapshot]})
@@ -151,11 +151,11 @@ class Cleaner(object):
         for key in keys:
             for snapshot in to_delete[key]:
                 log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
-                ZFS.destroy(dataset, snapshot['name'], endpoint)
+                ZFS.destroy(dataset, snapshot['name'], endpoint, log_command=log_command)
                 snapshots.pop(snapshot['handle'])
         for snapshot in end_of_life_snapshots:
             log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
-            ZFS.destroy(dataset, snapshot['name'], endpoint)
+            ZFS.destroy(dataset, snapshot['name'], endpoint, log_command=log_command)
             snapshots.pop(snapshot['handle'])
 
         if will_delete is True:

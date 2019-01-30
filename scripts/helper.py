@@ -27,6 +27,11 @@ import re
 import sys
 from subprocess import Popen, PIPE
 
+from magcode.core.globals_ import debug_extreme
+from magcode.core.globals_ import log_debug
+from magcode.core.globals_ import log_info
+from magcode.core.globals_ import log_error
+
 
 class Helper(object):
     """
@@ -34,7 +39,7 @@ class Helper(object):
     """
 
     @staticmethod
-    def run_command(command, cwd, endpoint=''):
+    def run_command(command, cwd, endpoint='', log_command=False):
         """
         Executes a command, returning the output. If the command fails, it raises
         """
@@ -42,6 +47,10 @@ class Helper(object):
             command = command
         else:
             command = "{0} '{1}'".format(endpoint, command)
+        if log_command:
+            log_debug("Executing command: '{0}'".format(command))
+        elif debug_extreme():
+            log_debug("Executing command: '{0}'".format(command))
         pattern = re.compile(r'[^\n\t@ a-zA-Z0-9_\\.:/\-]+')
         process = Popen(command, shell=True, cwd=cwd, stdout=PIPE, stderr=PIPE)
         out, err = process.communicate()
