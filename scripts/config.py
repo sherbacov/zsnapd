@@ -63,6 +63,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
         'preexec': SHELLCMD_REGEX,
         'postexec': SHELLCMD_REGEX,
+        'log_commands': BOOLEAN_REGEX,
         'replicate_all': BOOLEAN_REGEX,
         'all_snapshots': BOOLEAN_REGEX,
         'replicate_full_clone': BOOLEAN_REGEX,
@@ -244,7 +245,8 @@ class Config(object):
                                      'remote_clean_all': ds_config.get(dataset, 'remote_clean_all', fallback=None),
                                      'preexec': ds_config.get(dataset, 'preexec', fallback=None),
                                      'postexec': ds_config.get(dataset, 'postexec', fallback=None),
-                                     'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None)}
+                                     'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None),
+                                     'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False)}
                 if (ds_settings[dataset]['local_schema'] is None):
                     ds_settings[dataset]['local_schema'] = ds_settings[dataset]['schema']
                 if (ds_settings[dataset]['local_clean_all'] is None):
@@ -273,6 +275,7 @@ class Config(object):
                                                       'send_compression': ds_config.getboolean(dataset, 'replicate_send_compression', fallback=False),
                                                       'send_properties': ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False),
                                                       'buffer_size': ds_config.get(dataset, 'buffer_size', fallback=DEFAULT_BUFFER_SIZE),
+                                                      'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False),
                                                       'endpoint_host': host,
                                                       'endpoint_port': port}
        
