@@ -29,6 +29,7 @@ Features
   * Push based when the replication source has access to the replication target
   * Pull based when the replication source has no access to the replication target. Typically when you don't want to give
     all nodes access to the backup/replication target
+* Full clone replication mode, to copy sub folders and all ZFS properties
 * Cleans all snapshots with the yyyymmdd timestamp format based on a GFS schema (Grandfather, Father, Son).
 * Supports pre and post commands
   * Pre command is executed before any action is executed
@@ -160,12 +161,14 @@ A summary of the different options:
 * replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
 * compression: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
 * schema: In case the snapshots should be cleaned, this is the schema the manager will use to clean.
-* local_schema: For local snapshot cleaning/aging when dataset is receptical for remote source
+* local_schema: For local snapshot cleaning/aging when dataset is receptical for remote source when snapshots are pulled
+* local_schema: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
 * preexec: A command that will be executed, before snapshot/replication. Should be omitted if nothing should be executed
 * postexec: A command that will be executed, after snapshot/replication,  but before the cleanup. Should be omitted if nothing should be executed
 * clean_all: Clean/age all snapshots in dataset - default is False - ie zsnapd only
 * local_clean_all: Setting for local dataset when replicating source is remote
-* replicate_all: Replicate all snapshots in dataset - Default is True - ie all snapshots in dataset
+* all_snapshots: Replicate all snapshots in dataset - Default is True - ie all snapshots in dataset
+* log_commands: Per dataset log all commands executed for the dataset to DEBUG.  For checking what the program is doing exactly, helpful for auditing and security. 
 
 Naming convention
 -----------------
@@ -271,7 +274,7 @@ This python program/script has a few dependencies. When using the Archlinux AUR,
 * python3
 * openssh
 * mbuffer
-* python3-magcode-core > 1.5.4 - on pypi.org
+* python3-magcode-core >= 1.5.4 - on pypi.org
 * python3-psutil
 * python3-setproctitle
 
@@ -294,7 +297,7 @@ Warning
 As with any script deleting snapshots, use with caution. Make sure to test the script on
 a dummy dataset first when you use it directly from the repo. This to ensure no unexpected things will happen.
 
-The releases should be working fine, as I use these on my own environment.
+The releases should be working fine, as I use these on my own environment, and for customers.
 
 In case you find a bug, feel free to create a bugreport and/or fork and send a pull-request
 in case you fixed the bug yourself.
@@ -325,4 +328,4 @@ From Wikipedia:
     ZFS was originally implemented as open-source software, licensed under the Common Development and
     Distribution License (CDDL). The ZFS name is registered as a trademark of Oracle Corporation.
 
-ZFS Snapshot Manager is a standalone project, and is not affiliated with ZFS or Oracle Corporation.
+ZFS Snapshot Manager and zsnapd are standalone projects, and is not affiliated with ZFS or Oracle Corporation.
