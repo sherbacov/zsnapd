@@ -1,3 +1,11 @@
+zsnapd (0.8.1-1~1.gbp515bfe) unstable; urgency=medium
+
+  ** SNAPSHOT build @515bfe1ebb82ffe1ddc3096d9ce3ebe5e753f164 **
+
+  * Version 0.8.1 - Really properly update documentation
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 31 Jan 2019 12:43:30 +1300
+
 zsnapd (0.8.0-1~1.gbpe6d949) unstable; urgency=medium
 
   ** SNAPSHOT build @e6d949cd6c5a9501068f6071f3ec5047e1e7aed1 **
