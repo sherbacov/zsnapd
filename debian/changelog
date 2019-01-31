@@ -1,3 +1,11 @@
+zsnapd (0.8.2-1~1.gbp0d1a22) unstable; urgency=medium
+
+  ** SNAPSHOT build @0d1a22f379ca2e2dc2974eb7f812efec41fb1f29 **
+
+  * Fix a couple of bugs - typo and minor logic
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 31 Jan 2019 13:24:19 +1300
+
 zsnapd (0.8.1-1~1.gbp515bfe) unstable; urgency=medium
 
   ** SNAPSHOT build @515bfe1ebb82ffe1ddc3096d9ce3ebe5e753f164 **
