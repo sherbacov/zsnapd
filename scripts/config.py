@@ -37,13 +37,17 @@ from magcode.core.utility import MagCodeConfigError
 from scripts.globals_ import CLEANER_REGEX
 from scripts.globals_ import DEFAULT_BUFFER_SIZE
 
-TMP_HRMIN_REGEX = r'([0-1]*\d|2[0-3]):([0-5]\d)'
+TMP_HR_REGEX = r'([0-1]*\d|2[0-3])'
+TMP_HRMIN_REGEX = TMP_HR_REGEX + r':([0-5]\d)'
 TM_HRMIN_REGEX = r'^' + TMP_HRMIN_REGEX + r'$'
+TMP_RANGE_REGEX = TMP_HRMIN_REGEX + r'\s*-\s*' + TMP_HRMIN_REGEX + r'(\s*/\s*(' + TMP_HRMIN_REGEX + r'|' + TMP_HR_REGEX + r')){0,1}'
+TM_RANGE_REGEX = r'^' + TMP_RANGE_REGEX + r'$'
+TMP_HRMINRANGE_REGEX = r'(' + TMP_HRMIN_REGEX + r'|' + TMP_RANGE_REGEX + r')'
+TM_HRMINRANGE_REGEX = r'^' + TMP_HRMINRANGE_REGEX + r'$'
 TMP_HRMINCOMMA_REGEX = r'(' + TMP_HRMIN_REGEX + r'\s*,\s*){1,}' + TMP_HRMIN_REGEX
 TM_HRMINCOMMA_REGEX  = r'^' + TMP_HRMINCOMMA_REGEX + r'$'
-
-#TIME_REGEX = r'^trigger|' + TMP_HRMIN_REGEX + '|' + TMP_HRMINCOMMA_REGEX + r'$'
-TIME_REGEX = TM_HRMINCOMMA_REGEX
+TMP_HRMINRANGECOMMA_REGEX = r'(' + TMP_HRMINRANGE_REGEX + r'\s*,\s*){1,}' + TMP_HRMINRANGE_REGEX
+TM_HRMINRANGECOMMA_REGEX  = r'^' + TMP_HRMINRANGECOMMA_REGEX + r'$'
 
 ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
 ds_name_reserved_regex = r'^(log|DEFAULT|(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*)$'
@@ -59,7 +63,7 @@ USER_REGEX = r'^[a-zA-Z][-_.a-zA-Z0-9]*$'
 BUFFER_SIZE_REGEX = r'[0-9]{1,12}[kMG]'
 ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate': BOOLEAN_REGEX,
-        'time': TIME_REGEX,
+        'time': None,
         'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
         'preexec': SHELLCMD_REGEX,
         'postexec': SHELLCMD_REGEX,
@@ -95,8 +99,8 @@ def _check_time_syntax(section_name, item, time_spec):
     Function called to check time spec syntax
     """
     if (time_spec.find(',') > -1):
-        if(re.match(TM_HRMINCOMMA_REGEX, time_spec) is None):
-            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, ...'.".format(section_name, item, time_spec))
+        if(re.match(TM_HRMINRANGECOMMA_REGEX, time_spec) is None):
+            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, HH:MM-HH:MM/[HH:MM|HH|H], ...'.".format(section_name, item, time_spec))
             return False
         return True
     if re.match(TM_HRMIN_REGEX, time_spec) is None and time_spec != 'trigger':
@@ -319,14 +323,46 @@ class MeterTime(object):
         def parse_hrmin(time_spec):
             return(time.mktime(time.strptime(self._date + time_spec, self._date_spec + '%H:%M',)))
 
+        def parse_range(time_spec):
+            tm_list = []
+            parse = time_spec.split('-')
+            parse = [ts.strip() for ts in parse]
+            tm_start = parse_hrmin(parse[0])
+            if ('/' in parse[1]):
+                parse = [parse[0]] + parse[1].split('/')
+            tm_stop = parse_hrmin(parse[1])
+            if (len(parse) > 2):
+                int_parse = parse[2]
+                if ( ':' in int_parse):
+                    int_parse = int_parse.split(':')
+                    tm_int = int(int_parse[0]) * 3600 + int(int_parse[1]) * 60
+                else:
+                    tm_int = int(int_parse) * 3600
+            else:
+                tm_int = 3600
+            tm_next = tm_start
+            while (tm_next < tm_stop):
+                tm_list.append(tm_next)
+                tm_next += tm_int
+            tm_list.append(tm_stop)
+            return(tm_list)
+
+        def parse_spec(time_spec):
+            if re.match(TM_HRMIN_REGEX, time_spec):
+                return ([parse_hrmin(time_spec)])
+            if re.match(TM_RANGE_REGEX, time_spec):
+                return(parse_range(time_spec))
+            raise Exception('Parsing time specs, should not have got here!')
+
         time_list = []
         if re.match(TM_HRMIN_REGEX, time_spec):
             return [parse_hrmin(time_spec)]
 
-        if re.match(TM_HRMINCOMMA_REGEX, time_spec):
+        if re.match(TM_HRMINRANGECOMMA_REGEX, time_spec):
             spec_list = time_spec.split(',')
             spec_list = [ts.strip() for ts in spec_list]
-            time_list = [parse_hrmin(ts) for ts in spec_list]
+            for ts in spec_list:
+                time_list = time_list + parse_spec(ts)
             time_list.sort()
             return(time_list)
 
