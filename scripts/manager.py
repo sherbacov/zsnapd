@@ -253,7 +253,7 @@ class Manager(object):
             ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
             ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
             if full_clone:
-                for snapshot in src_snapshosts:
+                for snapshot in src_snapshots:
                     dst_snapshots.update({snapshot:src_snapshots[snapshot]})
             else:
                 dst_snapshots.update({snapshot:src_snapshots[snapshot]})
@@ -279,22 +279,25 @@ class Manager(object):
                 continue
             try:
                 dataset_settings = ds_settings[dataset]
-                log_command = dataset_settings['log_commands']
-                local_snapshots = snapshots.get(dataset, OrderedDict())
-                # Manage what snapshots we operate on - everything or zsnapd only
-                if not dataset_settings['all_snapshots']:
-                    for snapshot in local_snapshots:
-                        snapshotname = local_snapshots[snapshot]['name']
-                        if (re.match(SNAPSHOTNAME_REGEX, snapshotname)):
-                            continue
-                        local_snapshots.pop(snapshot)
-
                 take_snapshot = dataset_settings['snapshot'] is True
                 replicate = dataset_settings['replicate'] is not None
 
                 # Decide whether we need to handle this dataset
                 if not take_snapshot and not replicate:
                     continue
+ 
+                replicate_settings = dataset_settings['replicate']
+                full_clone = replicate_settings['full_clone'] if replicate else False
+                log_command = dataset_settings['log_commands']
+                local_snapshots = snapshots.get(dataset, OrderedDict())
+                # Manage what snapshots we operate on - everything or zsnapd only
+                if (not dataset_settings['all_snapshots'] and not full_clone):
+                    for snapshot in local_snapshots:
+                        snapshotname = local_snapshots[snapshot]['name']
+                        if (re.match(SNAPSHOTNAME_REGEX, snapshotname)):
+                            continue
+                        local_snapshots.pop(snapshot)
+
                 if dataset_settings['time'] == 'trigger':
                     # We wait until we find a trigger file in the filesystem
                     trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
@@ -308,7 +311,6 @@ class Manager(object):
                         continue
                     log_info('[{0}] - Time passed for {1}'.format(dataset, dataset))
 
-                replicate_settings = dataset_settings['replicate']
                 push = replicate_settings['target'] is not None if replicate else True
                 if push:
                     # Pre exectution command
