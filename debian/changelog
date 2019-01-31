@@ -1,23 +1,8 @@
-zsnapd (0.8.2-1~1.gbp0d1a22) unstable; urgency=medium
+zsnapd (0.8.2-1) unstable; urgency=medium
 
-  ** SNAPSHOT build @0d1a22f379ca2e2dc2974eb7f812efec41fb1f29 **
-
-  * Fix a couple of bugs - typo and minor logic
-
- -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 31 Jan 2019 13:24:19 +1300
-
-zsnapd (0.8.1-1~1.gbp515bfe) unstable; urgency=medium
-
-  ** SNAPSHOT build @515bfe1ebb82ffe1ddc3096d9ce3ebe5e753f164 **
-
+  * Version 0.8.2 - Fix a couple of bugs - typo and minor logic
   * Version 0.8.1 - Really properly update documentation
-
- -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 31 Jan 2019 12:43:30 +1300
-
-zsnapd (0.8.0-1~1.gbpe6d949) unstable; urgency=medium
-
-  ** SNAPSHOT build @e6d949cd6c5a9501068f6071f3ec5047e1e7aed1 **
-
+  * Version 0.8.0 - update version number and docs
   * full_clone code - runs and replicates
   * Add remote cleaning in push mode
   * replicate_all -> all_snapshots, -I for speed
@@ -25,9 +10,8 @@ zsnapd (0.8.0-1~1.gbpe6d949) unstable; urgency=medium
   * Implement per dataset command logging
   * Silence mbuffer output altogether
   * Get compression remote command checking working
-  * Version 0.8.0 - update version number and docs
 
- -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 31 Jan 2019 12:32:00 +1300
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 31 Jan 2019 23:56:28 +1300
 
 zsnapd (0.7.6-1) unstable; urgency=medium
 
