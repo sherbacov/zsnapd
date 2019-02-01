@@ -96,7 +96,7 @@ class ZsnapdProcess(ProcessDaemon):
         sleep_time = debug_sleep_time if debug() else sleep_time
 
         # Initialise Manager stuff
-        ds_settings = Config.read_ds_config(sleep_time)
+        ds_settings = Config.read_ds_config()
 
         # Process Main Loop
         while (self.check_signals()):
