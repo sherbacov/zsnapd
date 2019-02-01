@@ -319,7 +319,7 @@ class Config(object):
                 if (ds_template and ds_template in template_dict):
                     ds_dict[ds] = template_dict.get(ds_template, None)
 
-            hysteresis_time = int(get_numeric_settings('startup_hysteresis_time', float))
+            hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
             # Destroy ds_config and re read it
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)
