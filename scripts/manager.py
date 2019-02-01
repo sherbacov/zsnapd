@@ -108,7 +108,7 @@ class Manager(object):
         datasets = ZFS.get_datasets()
         ds_candidates = [ds.rstrip('/') for ds in args if ds[0] != '/']
         mnt_candidates = [m.rstrip('/') for m in args if m[0] == '/']
-        trigger_mnts_dict = {ds_settings[ds]['mountpoint']:ds for ds in ds_settings if ds_settings[ds]['time'] == 'trigger'}
+        trigger_mnts_dict = {ds_settings[ds]['mountpoint']:ds for ds in ds_settings if ds_settings[ds]['time'].is_trigger()}
         if len(ds_candidates):
             for candidate in ds_candidates:
                 if candidate not in datasets:
@@ -139,7 +139,7 @@ class Manager(object):
                     replicate = dataset_settings['replicate'] is not None
 
                     if take_snapshot is True or replicate is True:
-                        if dataset_settings['time'] == 'trigger':
+                        if dataset_settings['time'].is_trigger():
                             # Check endpoint for trigger is connected
                             if test_reachable and is_connected.test_unconnected(dataset_settings):
                                 continue
@@ -267,7 +267,6 @@ class Manager(object):
         Executes a single run where certain datasets might or might not be snapshotted
         """
 
-        meter_time = MeterTime(sleep_time)
         now = int(time.time())
         this_time = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(now))
 
@@ -298,7 +297,8 @@ class Manager(object):
                             continue
                         local_snapshots.pop(snapshot)
 
-                if dataset_settings['time'] == 'trigger':
+                meter_time = dataset_settings['time']
+                if meter_time.is_trigger():
                     # We wait until we find a trigger file in the filesystem
                     trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
                     if os.path.exists(trigger_filename):
@@ -307,7 +307,7 @@ class Manager(object):
                     else:
                         continue
                 else:
-                    if not meter_time.has_time_passed(dataset_settings['time'], now):
+                    if not meter_time.has_time_passed(now):
                         continue
                     log_info('[{0}] - Time passed for {1}'.format(dataset, dataset))
 
