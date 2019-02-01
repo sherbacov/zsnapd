@@ -1,3 +1,11 @@
+zsnapd (0.8.5-1) unstable; urgency=medium
+
+  * Version 0.8.5 release - fixes a few serious time logic issues
+  * Make snapshot creation time per dataset
+  * Implement startup_hysteresis_time for MeterTime
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Fri, 01 Feb 2019 15:09:12 +1300
+
 zsnapd (0.8.4-1) unstable; urgency=medium
 
   * Version 0.8.4 release
