@@ -308,20 +308,28 @@ class MeterTime(object):
     time strings for that cycle
     """
 
-    def __init__(self, sleep_time):
+    def __init__(self, time_spec, sleep_time):
         """
         Initialise class
         """
-        self._prev_secs = time.time() - sleep_time
-        self._date_spec = '%Y%m%d '
-        self._date = time.strftime(self._date_spec, time.localtime())
+        self.prev_secs = time.time() - sleep_time
+        self.__date_spec = '%Y%m%d '
+        self.__date = time.strftime(self.__date_spec, time.localtime())
+        self.time_spec = time_spec
+        self.time_list = self._parse_timespec(time_spec) if time_spec != 'trigger' else []
+
+    def __repr__(self):
+        return '{0}'.format(self.time_spec)
+
+    def __iter__(self):
+        yield from self.time_list
 
     def _parse_timespec(self, time_spec):
         """
         Parse a time spec
         """
         def parse_hrmin(time_spec):
-            return(time.mktime(time.strptime(self._date + time_spec, self._date_spec + '%H:%M',)))
+            return(time.mktime(time.strptime(self.__date + time_spec, self.__date_spec + '%H:%M')))
 
         def parse_range(time_spec):
             tm_list = []
@@ -367,19 +375,17 @@ class MeterTime(object):
             return(time_list)
 
         return time_list
-        
 
-    def has_time_passed(self, time_spec, now):
+    def has_time_passed(self, now):
         """
         Check if time has passed for a dataset
         """
-        prev_secs = self._prev_secs
-        time_list = self._parse_timespec(time_spec)
-        for inst in time_list:
+        prev_secs = self.prev_secs
+        for inst in self.time_list:
             if ( prev_secs < inst <= now):
-                self._prev_secs = now
+                self.prev_secs = now
                 return True
-        self._prev_secs = now
+        self.prev_secs = now
         return False
 
 
