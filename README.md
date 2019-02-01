@@ -143,7 +143,7 @@ Examples
     [zpool/backups/data]
     template = backup-other
     mountpoint = /mnt/backups/data
-    time = 23:00
+    time = 08:00, 19:00-23:00/00:30
     snapshot = False
     replicate_source = zpool/data
     schema = 7d3w11m4y
@@ -153,7 +153,7 @@ Examples
 A summary of the different options:
 
 * mountpoint: Points to the location to which the dataset is mounted, None for volumes
-* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, or a comma separated list of such times. It can also be 'trigger' indicating that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset.
+* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  In place of the timestamps, 'trigger' can also be given, indicating that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset.
 * snapshot: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
 * replicate_endpoint: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
 * replicate_endpoint_host: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
