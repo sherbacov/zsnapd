@@ -1,7 +1,9 @@
 TODO list for zsnapd
 ====================
 
-* parameters for mbuffer
-* zfs send -R support
-* better time parameter support, add ability for 
-  time range "hh:mm, hh:mm-hh:mm/interval, ..."
+* independent time events from main loop
+* event driven snapshotting
+* event driven cleaning
+* event driven replication/cleaning
+* use DBM file triggers/global loop for above to prevent serialisation issues
+  and a load pile up?
