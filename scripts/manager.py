@@ -267,15 +267,18 @@ class Manager(object):
         Executes a single run where certain datasets might or might not be snapshotted
         """
 
-        now = int(time.time())
-        this_time = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(now))
-
         snapshots = ZFS.get_snapshots()
         datasets = ZFS.get_datasets()
         is_connected = IsConnected()
         for dataset in datasets:
             if dataset not in ds_settings:
                 continue
+
+            # Evaluate per dataset to make closer to actual snapshot time
+            # Can wander due to large volume transfers and replications
+            now = int(time.time())
+            this_time = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(now))
+
             try:
                 dataset_settings = ds_settings[dataset]
                 take_snapshot = dataset_settings['snapshot'] is True
