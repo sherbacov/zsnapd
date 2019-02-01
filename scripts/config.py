@@ -117,11 +117,11 @@ class MeterTime(object):
     time strings for that cycle
     """
 
-    def __init__(self, time_spec, sleep_time):
+    def __init__(self, time_spec, hysteresis_time):
         """
         Initialise class
         """
-        self.prev_secs = int(time.time()) - sleep_time
+        self.prev_secs = int(time.time()) - hysteresis_time
         self.__date_spec = '%Y%m%d '
         self.__date = time.strftime(self.__date_spec, time.localtime())
         self.time_spec = time_spec
@@ -266,7 +266,7 @@ class Config(object):
         return result
 
     @staticmethod
-    def read_ds_config (sleep_time):
+    def read_ds_config():
         """
         Read dataset configuration
         """
@@ -319,13 +319,14 @@ class Config(object):
                 if (ds_template and ds_template in template_dict):
                     ds_dict[ds] = template_dict.get(ds_template, None)
 
+            hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
             # Destroy ds_config and re read it
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)
             for dataset in ds_config.sections():
                 old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
                 ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
-                                     'time': MeterTime(ds_config.get(dataset, 'time'), sleep_time),
+                                     'time': MeterTime(ds_config.get(dataset, 'time'), hysteresis_time),
                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                          fallback=old_setting_repl_all),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
