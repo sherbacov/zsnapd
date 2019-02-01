@@ -78,7 +78,8 @@ class ZsnapdTriggerProcess(Process):
         """
         self.check_if_root()
         # Read configuration
-        ds_settings = Config.read_ds_config()
+        sleep_time = int(get_numeric_setting('sleep_time', float))
+        ds_settings = Config.read_ds_config(sleep_time)
         # Process triggers
         if not(Manager.touch_trigger(ds_settings, 
             settings['reachable_arg'], *self.argv_left)):

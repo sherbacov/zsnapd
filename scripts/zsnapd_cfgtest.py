@@ -54,6 +54,7 @@ class ZsnapdCfgtestProcess(Process):
         zsnapd-cfgtest main process
         """
         # Test configuration
-        ds_settings = Config.read_ds_config()
+        sleep_time = int(get_numeric_setting('sleep_time', float))
+        ds_settings = Config.read_ds_config(sleep_time)
         sys.exit(os.EX_OK)
    

@@ -266,7 +266,7 @@ class Config(object):
         return result
 
     @staticmethod
-    def read_ds_config ():
+    def read_ds_config (sleep_time):
         """
         Read dataset configuration
         """
@@ -319,7 +319,6 @@ class Config(object):
                 if (ds_template and ds_template in template_dict):
                     ds_dict[ds] = template_dict.get(ds_template, None)
 
-            sleep_time = get_numeric_setting('sleep_time', float)
             # Destroy ds_config and re read it
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)

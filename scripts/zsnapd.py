@@ -91,12 +91,12 @@ class ZsnapdProcess(ProcessDaemon):
 
         # Initialise  a few nice things for the loop
         debug_mark = get_boolean_setting('debug_mark')
-        sleep_time = get_numeric_setting('sleep_time', float)
-        debug_sleep_time = get_numeric_setting('debug_sleep_time', float)
+        sleep_time = int(get_numeric_setting('sleep_time', float))
+        debug_sleep_time = int(get_numeric_setting('debug_sleep_time', float))
         sleep_time = debug_sleep_time if debug() else sleep_time
 
         # Initialise Manager stuff
-        ds_settings = Config.read_ds_config()
+        ds_settings = Config.read_ds_config(sleep_time)
 
         # Process Main Loop
         while (self.check_signals()):
