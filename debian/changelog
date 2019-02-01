@@ -1,3 +1,12 @@
+zsnapd (0.8.4-1) unstable; urgency=medium
+
+  * Version 0.8.4 release
+  * Time range support for snapshot times
+  * Update docs for time ranges etc.
+  * Fix for time logic - previous time not being set
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Fri, 01 Feb 2019 14:13:37 +1300
+
 zsnapd (0.8.2-1) unstable; urgency=medium
 
   * Version 0.8.2 - Fix a couple of bugs - typo and minor logic
