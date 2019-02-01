@@ -31,6 +31,7 @@ except ImportError:
 
 from magcode.core.process import Process
 from magcode.core.process import BooleanCmdLineArg
+from magcode.core.utility import get_numeric_setting
 from magcode.core.globals_ import *
 # import this to set up config file settings etc
 import scripts.globals_
