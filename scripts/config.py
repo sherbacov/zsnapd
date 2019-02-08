@@ -104,8 +104,8 @@ def _check_time_syntax(section_name, item, time_spec):
             log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, HH:MM-HH:MM/[HH:MM|HH|H], ...'.".format(section_name, item, time_spec))
             return False
         return True
-    if re.match(TM_HRMIN_REGEX, time_spec) is None and time_spec != 'trigger':
-        log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM' or 'trigger'.".format(section_name, item, time_spec))
+    if re.match(TM_HRMINRANGE_REGEX, time_spec) is None and time_spec != 'trigger':
+        log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]' or 'trigger'.".format(section_name, item, time_spec))
         return False
     return True
 
@@ -143,10 +143,10 @@ class MeterTime(object):
         def parse_range(time_spec):
             tm_list = []
             parse = time_spec.split('-')
-            parse = [ts.strip() for ts in parse]
-            tm_start = parse_hrmin(parse[0])
             if ('/' in parse[1]):
                 parse = [parse[0]] + parse[1].split('/')
+            parse = [ts.strip() for ts in parse]
+            tm_start = parse_hrmin(parse[0])
             tm_stop = parse_hrmin(parse[1])
             if (len(parse) > 2):
                 int_parse = parse[2]
@@ -172,18 +172,12 @@ class MeterTime(object):
             raise Exception('Parsing time specs, should not have got here!')
 
         time_list = []
-        if re.match(TM_HRMIN_REGEX, time_spec):
-            return [parse_hrmin(time_spec)]
-
-        if re.match(TM_HRMINRANGECOMMA_REGEX, time_spec):
-            spec_list = time_spec.split(',')
-            spec_list = [ts.strip() for ts in spec_list]
-            for ts in spec_list:
-                time_list = time_list + parse_spec(ts)
-            time_list.sort()
-            return(time_list)
-
-        return time_list
+        spec_list = time_spec.split(',')
+        spec_list = [ts.strip() for ts in spec_list]
+        for ts in spec_list:
+            time_list = time_list + parse_spec(ts)
+        time_list.sort()
+        return(time_list)
 
     def is_trigger(self):
         return self.time_spec == 'trigger'
