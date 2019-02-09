@@ -99,57 +99,6 @@ def _parse_hrmin(time_spec):
     date = time.strftime(DATE_SPEC, time.localtime())
     return(int(time.mktime(time.strptime(date + time_spec, DATE_SPEC + '%H:%M'))))
 
-def _parse_timespec(time_spec, section_name=None, item=None):
-    """
-    Parse a time spec
-    """
-    def parse_range(time_spec):
-        tm_list = []
-        parse = time_spec.split('-')
-        if ('/' in parse[1]):
-            parse = [parse[0]] + parse[1].split('/')
-        parse = [ts.strip() for ts in parse]
-        tm_start = _parse_hrmin(parse[0])
-        tm_stop = _parse_hrmin(parse[1])
-        if (tm_stop < tm_start):
-            log_error("[{0}] {1} - '{2}' - '{3}' before '{4}', should be after."
-                    .format(section_name, item, time_spec, parse[1], parse[0]))
-            parse_flag = False
-            return([])
-        if (len(parse) > 2):
-            int_parse = parse[2]
-            if ( ':' in int_parse):
-                int_parse = int_parse.split(':')
-                tm_int = int(int_parse[0]) * 3600 + int(int_parse[1]) * 60
-            else:
-                tm_int = int(int_parse) * 3600
-        else:
-            tm_int = 3600
-        tm_next = tm_start
-        while (tm_next < tm_stop):
-            tm_list.append(tm_next)
-            tm_next += tm_int
-        tm_list.append(tm_stop)
-        return(tm_list)
-
-    def parse_spec(time_spec):
-        if re.match(TM_HRMIN_REGEX, time_spec):
-            return ([_parse_hrmin(time_spec)])
-        if re.match(TM_RANGE_REGEX, time_spec):
-            return(parse_range(time_spec))
-        raise Exception('Parsing time specs, should not have got here!')
-
-    parse_flag = True
-    time_list = []
-    spec_list = time_spec.split(',')
-    spec_list = [ts.strip() for ts in spec_list]
-    for ts in spec_list:
-        time_list = time_list + parse_spec(ts)
-    time_list.sort()
-    if parse_flag:
-        return(time_list)
-    else:
-        return([])
 
 def _check_time_syntax(section_name, item, time_spec):
     """
@@ -165,7 +114,8 @@ def _check_time_syntax(section_name, item, time_spec):
         if (re.match(TM_HRMINRANGE_REGEX, time_spec) is None):
             log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]' or 'trigger'.".format(section_name, item, time_spec))
             return False
-    if not _parse_timespec(time_spec, section_name, item):
+    test_time = MeterTime(time_spec)
+    if not test_time(time_spec, section_name, item):
         return False
     return True
 
@@ -177,20 +127,77 @@ class MeterTime(object):
     time strings for that cycle
     """
 
-    def __init__(self, time_spec, hysteresis_time):
+    def __init__(self, time_spec):
         """
         Initialise class
         """
+        hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
         self.prev_secs = int(time.time()) - hysteresis_time
         self.time_spec = time_spec
         self.date = _parse_hrmin('00:00')
-        self.time_list = _parse_timespec(self.time_spec) if self.time_spec != 'trigger' else []
+        self.time_list = self._parse_timespec(self.time_spec) if self.time_spec != 'trigger' else []
 
     def __repr__(self):
         return '{0}'.format(self.time_spec)
 
     def __iter__(self):
         yield from self.time_list
+
+    def __call__(self, time_spec, section_name, item):
+        return (self._parse_timespec(time_spec, section_name, item))
+
+
+    def _parse_timespec(self, time_spec, section_name=None, item=None):
+        """
+        Parse a time spec
+        """
+        def parse_range(time_spec):
+            tm_list = []
+            parse = time_spec.split('-')
+            if ('/' in parse[1]):
+                parse = [parse[0]] + parse[1].split('/')
+            parse = [ts.strip() for ts in parse]
+            tm_start = _parse_hrmin(parse[0])
+            tm_stop = _parse_hrmin(parse[1])
+            if (tm_stop < tm_start):
+                log_error("[{0}] {1} - '{2}' - '{3}' before '{4}', should be after."
+                        .format(section_name, item, time_spec, parse[1], parse[0]))
+                parse_flag = False
+                return([])
+            if (len(parse) > 2):
+                int_parse = parse[2]
+                if ( ':' in int_parse):
+                    int_parse = int_parse.split(':')
+                    tm_int = int(int_parse[0]) * 3600 + int(int_parse[1]) * 60
+                else:
+                    tm_int = int(int_parse) * 3600
+            else:
+                tm_int = 3600
+            tm_next = tm_start
+            while (tm_next < tm_stop):
+                tm_list.append(tm_next)
+                tm_next += tm_int
+            tm_list.append(tm_stop)
+            return(tm_list)
+
+        def parse_spec(time_spec):
+            if re.match(TM_HRMIN_REGEX, time_spec):
+                return ([_parse_hrmin(time_spec)])
+            if re.match(TM_RANGE_REGEX, time_spec):
+                return(parse_range(time_spec))
+            raise Exception('Parsing time specs, should not have got here!')
+
+        parse_flag = True
+        time_list = []
+        spec_list = time_spec.split(',')
+        spec_list = [ts.strip() for ts in spec_list]
+        for ts in spec_list:
+            time_list = time_list + parse_spec(ts)
+        time_list.sort()
+        if parse_flag:
+            return(time_list)
+        else:
+            return([])
 
     def is_trigger(self):
         return self.time_spec == 'trigger'
@@ -203,7 +210,7 @@ class MeterTime(object):
         if (now_date > self.date):
             # Now a new day, reinitialise time_list
             self.date = now_date
-            self.time_list = _parse_timespec(self.time_spec) if self.time_spec != 'trigger' else []
+            self.time_list = self._parse_timespec(self.time_spec) if self.time_spec != 'trigger' else []
         prev_secs = self.prev_secs
         for inst in self.time_list:
             if ( prev_secs < inst <= now):
@@ -331,14 +338,13 @@ class Config(object):
                 if (ds_template and ds_template in template_dict):
                     ds_dict[ds] = template_dict.get(ds_template, None)
 
-            hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
             # Destroy ds_config and re read it
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)
             for dataset in ds_config.sections():
                 old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
                 ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
-                                     'time': MeterTime(ds_config.get(dataset, 'time'), hysteresis_time),
+                                     'time': MeterTime(ds_config.get(dataset, 'time')),
                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                          fallback=old_setting_repl_all),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
