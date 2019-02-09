@@ -95,10 +95,6 @@ DEFAULT_ENDPOINT_PORT = 22
 DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
 DATE_SPEC = '%Y%m%d '
 
-def _parse_hrmin(time_spec):
-    date = time.strftime(DATE_SPEC, time.localtime())
-    return(int(time.mktime(time.strptime(date + time_spec, DATE_SPEC + '%H:%M'))))
-
 
 def _check_time_syntax(section_name, item, time_spec):
     """
@@ -134,7 +130,7 @@ class MeterTime(object):
         hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
         self.prev_secs = int(time.time()) - hysteresis_time
         self.time_spec = time_spec
-        self.date = _parse_hrmin('00:00')
+        self.date = self._midnight_date()
         self.time_list = self._parse_timespec(self.time_spec) if self.time_spec != 'trigger' else []
 
     def __repr__(self):
@@ -146,11 +142,17 @@ class MeterTime(object):
     def __call__(self, time_spec, section_name, item):
         return (self._parse_timespec(time_spec, section_name, item))
 
+    def _midnight_date(self):
+        date = time.strftime(DATE_SPEC, time.localtime())
+        return(int(time.mktime(time.strptime(date + '00:00', DATE_SPEC + '%H:%M'))))
 
     def _parse_timespec(self, time_spec, section_name=None, item=None):
         """
         Parse a time spec
         """
+        def _parse_hrmin(time_spec):
+            return(int(time.mktime(time.strptime(date + time_spec, DATE_SPEC + '%H:%M'))))
+
         def parse_range(time_spec):
             tm_list = []
             parse = time_spec.split('-')
@@ -188,6 +190,7 @@ class MeterTime(object):
             raise Exception('Parsing time specs, should not have got here!')
 
         parse_flag = True
+        date = time.strftime(DATE_SPEC, time.localtime())
         time_list = []
         spec_list = time_spec.split(',')
         spec_list = [ts.strip() for ts in spec_list]
@@ -206,7 +209,7 @@ class MeterTime(object):
         """
         Check if time has passed for a dataset
         """
-        now_date = _parse_hrmin('00:00')
+        now_date = self._midnight_date()
         if (now_date > self.date):
             # Now a new day, reinitialise time_list
             self.date = now_date
