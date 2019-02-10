@@ -93,20 +93,28 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         }
 DEFAULT_ENDPOINT_PORT = 22
 DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
+DATE_SPEC = '%Y%m%d '
 
 
 def _check_time_syntax(section_name, item, time_spec):
     """
     Function called to check time spec syntax
     """
-    if (time_spec.find(',') > -1):
-        if(re.match(TM_HRMINRANGECOMMA_REGEX, time_spec) is None):
+    if (time_spec == 'trigger'):
+        return True
+    if (',' in time_spec):
+        if (re.match(TM_HRMINRANGECOMMA_REGEX, time_spec) is None):
             log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, HH:MM-HH:MM/[HH:MM|HH|H], ...'.".format(section_name, item, time_spec))
             return False
-        return True
-    if re.match(TM_HRMIN_REGEX, time_spec) is None and time_spec != 'trigger':
-        log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM' or 'trigger'.".format(section_name, item, time_spec))
+    else:
+        if (re.match(TM_HRMINRANGE_REGEX, time_spec) is None):
+            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]' or 'trigger'.".format(section_name, item, time_spec))
+            return False
+    test_time = MeterTime()
+    if not test_time(time_spec, section_name, item):
+        del test_time
         return False
+    del test_time
     return True
 
 ds_syntax_dict['time'] = _check_time_syntax
@@ -117,15 +125,15 @@ class MeterTime(object):
     time strings for that cycle
     """
 
-    def __init__(self, time_spec, hysteresis_time):
+    def __init__(self, time_spec=''):
         """
         Initialise class
         """
+        hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
         self.prev_secs = int(time.time()) - hysteresis_time
-        self.__date_spec = '%Y%m%d '
-        self.__date = time.strftime(self.__date_spec, time.localtime())
         self.time_spec = time_spec
-        self.time_list = self._parse_timespec(time_spec) if time_spec != 'trigger' else []
+        self.date = self._midnight_date()
+        self.time_list = self._parse_timespec(self.time_spec) if (self.time_spec and self.time_spec != 'trigger') else []
 
     def __repr__(self):
         return '{0}'.format(self.time_spec)
@@ -133,21 +141,34 @@ class MeterTime(object):
     def __iter__(self):
         yield from self.time_list
 
-    def _parse_timespec(self, time_spec):
+    def __call__(self, time_spec, section_name, item):
+        return (self._parse_timespec(time_spec, section_name, item))
+
+    def _midnight_date(self):
+        date = time.strftime(DATE_SPEC, time.localtime())
+        return(int(time.mktime(time.strptime(date + '00:00', DATE_SPEC + '%H:%M'))))
+
+    def _parse_timespec(self, time_spec, section_name=None, item=None):
         """
         Parse a time spec
         """
         def parse_hrmin(time_spec):
-            return(time.mktime(time.strptime(self.__date + time_spec, self.__date_spec + '%H:%M')))
+            return(int(time.mktime(time.strptime(date + time_spec, DATE_SPEC + '%H:%M'))))
 
         def parse_range(time_spec):
             tm_list = []
             parse = time_spec.split('-')
-            parse = [ts.strip() for ts in parse]
-            tm_start = parse_hrmin(parse[0])
             if ('/' in parse[1]):
                 parse = [parse[0]] + parse[1].split('/')
+            parse = [ts.strip() for ts in parse]
+            tm_start = parse_hrmin(parse[0])
             tm_stop = parse_hrmin(parse[1])
+            if (tm_stop < tm_start):
+                if (section_name and item):
+                    log_error("[{0}] {1} - '{2}' - '{3}' before '{4}', should be after."
+                            .format(section_name, item, time_spec, parse[1], parse[0]))
+                parse_flag = False
+                return([])
             if (len(parse) > 2):
                 int_parse = parse[2]
                 if ( ':' in int_parse):
@@ -171,19 +192,18 @@ class MeterTime(object):
                 return(parse_range(time_spec))
             raise Exception('Parsing time specs, should not have got here!')
 
+        parse_flag = True
+        date = time.strftime(DATE_SPEC, time.localtime())
         time_list = []
-        if re.match(TM_HRMIN_REGEX, time_spec):
-            return [parse_hrmin(time_spec)]
-
-        if re.match(TM_HRMINRANGECOMMA_REGEX, time_spec):
-            spec_list = time_spec.split(',')
-            spec_list = [ts.strip() for ts in spec_list]
-            for ts in spec_list:
-                time_list = time_list + parse_spec(ts)
-            time_list.sort()
+        spec_list = time_spec.split(',')
+        spec_list = [ts.strip() for ts in spec_list]
+        for ts in spec_list:
+            time_list = time_list + parse_spec(ts)
+        time_list.sort()
+        if parse_flag:
             return(time_list)
-
-        return time_list
+        else:
+            return([])
 
     def is_trigger(self):
         return self.time_spec == 'trigger'
@@ -192,6 +212,11 @@ class MeterTime(object):
         """
         Check if time has passed for a dataset
         """
+        now_date = self._midnight_date()
+        if (now_date > self.date):
+            # Now a new day, reinitialise time_list
+            self.date = now_date
+            self.time_list = self._parse_timespec(self.time_spec) if (self.time_spec and self.time_spec != 'trigger') else []
         prev_secs = self.prev_secs
         for inst in self.time_list:
             if ( prev_secs < inst <= now):
@@ -319,14 +344,13 @@ class Config(object):
                 if (ds_template and ds_template in template_dict):
                     ds_dict[ds] = template_dict.get(ds_template, None)
 
-            hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
             # Destroy ds_config and re read it
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)
             for dataset in ds_config.sections():
                 old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
                 ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
-                                     'time': MeterTime(ds_config.get(dataset, 'time'), hysteresis_time),
+                                     'time': MeterTime(ds_config.get(dataset, 'time')),
                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                          fallback=old_setting_repl_all),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
