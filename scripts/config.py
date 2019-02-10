@@ -110,9 +110,11 @@ def _check_time_syntax(section_name, item, time_spec):
         if (re.match(TM_HRMINRANGE_REGEX, time_spec) is None):
             log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]' or 'trigger'.".format(section_name, item, time_spec))
             return False
-    test_time = MeterTime(time_spec)
+    test_time = MeterTime()
     if not test_time(time_spec, section_name, item):
+        del test_time
         return False
+    del test_time
     return True
 
 ds_syntax_dict['time'] = _check_time_syntax
@@ -123,7 +125,7 @@ class MeterTime(object):
     time strings for that cycle
     """
 
-    def __init__(self, time_spec):
+    def __init__(self, time_spec=''):
         """
         Initialise class
         """
@@ -131,7 +133,7 @@ class MeterTime(object):
         self.prev_secs = int(time.time()) - hysteresis_time
         self.time_spec = time_spec
         self.date = self._midnight_date()
-        self.time_list = self._parse_timespec(self.time_spec) if self.time_spec != 'trigger' else []
+        self.time_list = self._parse_timespec(self.time_spec) if (self.time_spec and self.time_spec != 'trigger') else []
 
     def __repr__(self):
         return '{0}'.format(self.time_spec)
@@ -162,8 +164,9 @@ class MeterTime(object):
             tm_start = _parse_hrmin(parse[0])
             tm_stop = _parse_hrmin(parse[1])
             if (tm_stop < tm_start):
-                log_error("[{0}] {1} - '{2}' - '{3}' before '{4}', should be after."
-                        .format(section_name, item, time_spec, parse[1], parse[0]))
+                if (section_name and item):
+                    log_error("[{0}] {1} - '{2}' - '{3}' before '{4}', should be after."
+                            .format(section_name, item, time_spec, parse[1], parse[0]))
                 parse_flag = False
                 return([])
             if (len(parse) > 2):
@@ -213,7 +216,7 @@ class MeterTime(object):
         if (now_date > self.date):
             # Now a new day, reinitialise time_list
             self.date = now_date
-            self.time_list = self._parse_timespec(self.time_spec) if self.time_spec != 'trigger' else []
+            self.time_list = self._parse_timespec(self.time_spec) if (self.time_spec and self.time_spec != 'trigger') else []
         prev_secs = self.prev_secs
         for inst in self.time_list:
             if ( prev_secs < inst <= now):
