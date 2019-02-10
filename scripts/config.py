@@ -152,7 +152,7 @@ class MeterTime(object):
         """
         Parse a time spec
         """
-        def _parse_hrmin(time_spec):
+        def parse_hrmin(time_spec):
             return(int(time.mktime(time.strptime(date + time_spec, DATE_SPEC + '%H:%M'))))
 
         def parse_range(time_spec):
@@ -161,8 +161,8 @@ class MeterTime(object):
             if ('/' in parse[1]):
                 parse = [parse[0]] + parse[1].split('/')
             parse = [ts.strip() for ts in parse]
-            tm_start = _parse_hrmin(parse[0])
-            tm_stop = _parse_hrmin(parse[1])
+            tm_start = parse_hrmin(parse[0])
+            tm_stop = parse_hrmin(parse[1])
             if (tm_stop < tm_start):
                 if (section_name and item):
                     log_error("[{0}] {1} - '{2}' - '{3}' before '{4}', should be after."
@@ -187,7 +187,7 @@ class MeterTime(object):
 
         def parse_spec(time_spec):
             if re.match(TM_HRMIN_REGEX, time_spec):
-                return ([_parse_hrmin(time_spec)])
+                return ([parse_hrmin(time_spec)])
             if re.match(TM_RANGE_REGEX, time_spec):
                 return(parse_range(time_spec))
             raise Exception('Parsing time specs, should not have got here!')
