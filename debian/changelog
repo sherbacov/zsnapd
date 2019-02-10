@@ -1,3 +1,11 @@
+zsnapd (0.8.7-1) unstable; urgency=medium
+
+  * Version 0.8.7
+  * Update TODO list for future work on event queueing
+  * Fix time interval calculation and parsing
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Sun, 10 Feb 2019 14:24:34 +1300
+
 zsnapd (0.8.5-1) unstable; urgency=medium
 
   * Version 0.8.5 release - fixes a few serious time logic issues
