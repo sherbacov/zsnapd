@@ -137,8 +137,9 @@ class Manager(object):
 
                     take_snapshot = dataset_settings['snapshot'] is True
                     replicate = dataset_settings['replicate'] is not None
+                    clean = bool(dataset_settings['schema'])
 
-                    if take_snapshot is True or replicate is True:
+                    if take_snapshot is True or replicate is True or clean is True:
                         if dataset_settings['time'].is_trigger():
                             # Check endpoint for trigger is connected
                             if test_reachable and is_connected.test_unconnected(dataset_settings):
@@ -283,9 +284,10 @@ class Manager(object):
                 dataset_settings = ds_settings[dataset]
                 take_snapshot = dataset_settings['snapshot'] is True
                 replicate = dataset_settings['replicate'] is not None
+                clean = bool(dataset_settings['schema'])
 
                 # Decide whether we need to handle this dataset
-                if not take_snapshot and not replicate:
+                if not take_snapshot and not replicate and not clean:
                     continue
  
                 replicate_settings = dataset_settings['replicate']

@@ -63,24 +63,24 @@ class Cleaner(object):
 
         # Loading snapshots
         snapshot_list = []
-        held_snapshots = OrderedDict()
         for snapshot in snapshots:
             snapshotname = snapshots[snapshot]['name']
             if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
                 # If required, only clean zsnapd snapshots
                 continue
+            held = False
             if ZFS.is_held(dataset, snapshotname, endpoint, log_command=log_command):
-                log_debug('[{0}]   - Ignoring and keeping {1}@{2} - held snapshot'
+                log_debug('[{0}]   - Keeping {1}@{2} - held snapshot'
                         .format(local_dataset, dataset, snapshotname))
-                held_snapshots.update({snapshot:snapshots[snapshot]})
-                continue
+                held = True
             snapshot_ctime = snapshots[snapshot]['creation']
             snapshot_age = (base_time - snapshot_ctime)/3600
             snapshot_age = int(snapshot_age) if snapshot_age >= 0 else -1
             snapshot_list.append({'name': snapshotname,
                                   'handle': snapshot,
                                   'time': datetime.fromtimestamp(snapshot_ctime),
-                                  'age': snapshot_age})
+                                  'age': snapshot_age,
+                                  'held': held})
 
         buckets = {}
         counter = -1
@@ -143,17 +143,21 @@ class Cleaner(object):
 
         if will_delete is True:
             log_info('Cleaning {0}'.format(dataset))
-            for snapshot in held_snapshots:
-                log_info('[{0}] -   Skipping held {1}@{2}'.format(local_dataset, dataset, held_snapshots[snapshot]['name']))
 
         keys = list(to_delete.keys())
         keys.sort()
         for key in keys:
             for snapshot in to_delete[key]:
+                if snapshot['held']:
+                    log_info('[{0}] -   Skipping held {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
+                    continue
                 log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
                 ZFS.destroy(dataset, snapshot['name'], endpoint, log_command=log_command)
                 snapshots.pop(snapshot['handle'])
         for snapshot in end_of_life_snapshots:
+            if snapshot['held']:
+                log_info('[{0}] -   Skipping held {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
+                continue
             log_info('[{0}] -   Destroying {1}@{2}'.format(local_dataset, dataset, snapshot['name']))
             ZFS.destroy(dataset, snapshot['name'], endpoint, log_command=log_command)
             snapshots.pop(snapshot['handle'])
