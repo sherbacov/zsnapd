@@ -142,7 +142,7 @@ class Cleaner(object):
             to_delete[key] = to_delete.get(key, [])
 
         if will_delete is True:
-            log_info('Cleaning {0}'.format(dataset))
+            log_info('[{0}] - Cleaning {1}'.format(local_dataset, dataset))
 
         keys = list(to_delete.keys())
         keys.sort()
