@@ -1,3 +1,13 @@
+zsnapd (0.8.9-1) unstable; urgency=medium
+
+  * Fix Cleaing start log message to match standard format
+  * Add ability to read mountpoint property from ZFS
+  * trigger allowed in comma time spec
+  * {template} key in config for time string
+  * Version 0.8.9, documentation updated
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 21 Feb 2019 22:21:13 +1300
+
 zsnapd (0.8.8-1) unstable; urgency=medium
 
   * Release 0.8.8
