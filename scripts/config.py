@@ -405,7 +405,7 @@ class Config(object):
                     try:
                         time_spec = time_spec.replace(TEMPLATE_KEY, ds_dict[dataset]['time'])
                     except KeyError:
-                        log_error("[{0}] - template section does not exist.".format(dataset))
+                        log_error("[{0}] - template section or template time setting does not exist.".format(dataset))
                         invalid_config = True
                         continue
                 test_time = MeterTime()
