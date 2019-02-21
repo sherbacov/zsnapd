@@ -25,6 +25,7 @@ Processes and reads in configuration
 """
 
 import os
+import os.path
 import sys
 import re
 import errno
@@ -38,6 +39,7 @@ from magcode.core.utility import get_numeric_setting
 
 from scripts.globals_ import CLEANER_REGEX
 from scripts.globals_ import DEFAULT_BUFFER_SIZE
+from scripts.globals_ import TRIGGER_FILENAME
 from scripts.zfs import ZFS
 
 TEMPLATE_KEY = r'{template}'
@@ -140,12 +142,14 @@ class MeterTime(object):
     time strings for that cycle
     """
 
-    def __init__(self, time_spec=''):
+    def __init__(self, dataset='', time_spec='', mountpoint=''):
         """
         Initialise class
         """
         hysteresis_time = int(get_numeric_setting('startup_hysteresis_time', float))
         self.prev_secs = int(time.time()) - hysteresis_time
+        self.dataset = dataset
+        self.mountpoint = mountpoint
         self.time_spec = time_spec
         self.date = self._midnight_date()
         # Do this before calling _parse_timespec(), as that routine sets it!
@@ -234,18 +238,30 @@ class MeterTime(object):
     def is_trigger(self):
         return self.trigger_flag
 
-    def has_time_passed(self, now):
+    def do_run(self, now):
         """
-        Check if time has passed for a dataset
+        Check if time has passed for a dataset, or for a .trigger file
         """
+        # Reinitialise time_list
         now_date = self._midnight_date()
         if (now_date > self.date):
             # Now a new day, reinitialise time_list
             self.date = now_date
             self.time_list = self._parse_timespec(self.time_spec) if self.time_spec else []
+        # Trigger file
+        if self.is_trigger():
+            # We wait until we find a trigger file in the filesystem
+            trigger_filename = '{0}/{1}'.format(self.mountpoint, TRIGGER_FILENAME)
+            if os.path.exists(trigger_filename):
+                log_info("[{0}] - trigger file '{1}' found".format(self.dataset, trigger_filename))
+                os.remove(trigger_filename)
+                self.prev_secs = now
+                return True
+        # Check for Time passed
         prev_secs = self.prev_secs
         for inst in self.time_list:
             if ( prev_secs < inst <= now):
+                log_info('[{0}] - time passed has passed'.format(self.dataset))
                 self.prev_secs = now
                 return True
         self.prev_secs = now
@@ -402,7 +418,7 @@ class Config(object):
                 # Deal with deprecated settings
                 old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
                 ds_settings[dataset] = {'mountpoint': mountpoint,
-                                     'time': MeterTime(time_spec),
+                                     'time': MeterTime(dataset, time_spec, mountpoint),
                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                          fallback=old_setting_repl_all),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
