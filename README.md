@@ -111,6 +111,7 @@ Examples
     replicate_endpoint_port = 2345
     replicate_endpoint_command = ssh -l backup -p {port} {host}
     compression = gzip
+    time = 17:00 - 21:00 /2
 
     [backup-other]
     replicate_endpoint_host = other.remote.server.org
@@ -122,7 +123,7 @@ Examples
     [zroot]
     template = backup-local
     mountpoint = /
-    time = 21:00
+    time = {template}, trigger
     snapshot = True
     schema = 7d3w11m5y
 
@@ -153,7 +154,7 @@ Examples
 A summary of the different options:
 
 * mountpoint: Points to the location to which the dataset is mounted, None for volumes
-* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  In place of the timestamps, 'trigger' can also be given, indicating that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset.
+* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, 'trigger', or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  Alon with the timestamps, 'trigger' indicates that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset. As shown above, '{template}' is substituted for the time specification string from the template for that dataset in the dataset file.  Thus the time setting for an individual dataset using a template can be augmented in its definition.
 * snapshot: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
 * replicate_endpoint: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
 * replicate_endpoint_host: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.

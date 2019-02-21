@@ -79,14 +79,14 @@ class ZFS(object):
         Retreives all datasets
         """
         if endpoint == '':
-            command = 'zfs list -H'
+            command = 'zfs list -pH -o name,mountpoint'
         else:
-            command = "{0} 'zfs list -H'"
+            command = "{0} 'zfs list -pH -o name,mountpoint'"
         output = Helper.run_command(command.format(endpoint), '/', log_command=log_command)
-        datasets = []
+        datasets = {}
         for line in filter(len, output.split('\n')):
             parts = list(filter(len, line.split('\t')))
-            datasets.append(parts[0])
+            datasets[parts[0]] = {'name': parts[0], 'mountpoint': parts[1]}
         return datasets
 
     @staticmethod

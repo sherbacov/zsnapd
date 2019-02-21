@@ -37,9 +37,9 @@ from magcode.core.utility import get_numeric_setting
 from scripts.zfs import ZFS
 from scripts.clean import Cleaner
 from scripts.helper import Helper
-from scripts.config import MeterTime
 from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
 from scripts.globals_ import SNAPSHOTNAME_REGEX
+from scripts.globals_ import TRIGGER_FILENAME
 
 PROC_FAILURE = 0
 PROC_EXECUTED = 1
@@ -145,7 +145,7 @@ class Manager(object):
                             if test_reachable and is_connected.test_unconnected(dataset_settings):
                                 continue
                             # Trigger file testing and creation
-                            trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
+                            trigger_filename = '{0}/{1}'.format(dataset_settings['mountpoint'], TRIGGER_FILENAME)
                             if os.path.exists(trigger_filename):
                                 continue
                             if (not os.path.isdir(dataset_settings['mountpoint'])):
@@ -303,18 +303,8 @@ class Manager(object):
                         local_snapshots.pop(snapshot)
 
                 meter_time = dataset_settings['time']
-                if meter_time.is_trigger():
-                    # We wait until we find a trigger file in the filesystem
-                    trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
-                    if os.path.exists(trigger_filename):
-                        log_info('[{0}] - Trigger found on {1}'.format(dataset, dataset))
-                        os.remove(trigger_filename)
-                    else:
-                        continue
-                else:
-                    if not meter_time.has_time_passed(now):
-                        continue
-                    log_info('[{0}] - Time passed for {1}'.format(dataset, dataset))
+                if not meter_time.do_run(now):
+                    continue
 
                 push = replicate_settings['target'] is not None if replicate else True
                 if push:
