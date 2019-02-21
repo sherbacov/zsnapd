@@ -146,7 +146,7 @@ class Manager(object):
                             if test_reachable and is_connected.test_unconnected(dataset_settings):
                                 continue
                             # Trigger file testing and creation
-                            trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
+                            trigger_filename = '{0}/{1}'.format(dataset_settings['mountpoint'], TRIGGER_FILENAME)
                             if os.path.exists(trigger_filename):
                                 continue
                             if (not os.path.isdir(dataset_settings['mountpoint'])):
@@ -306,7 +306,7 @@ class Manager(object):
                 meter_time = dataset_settings['time']
                 if meter_time.is_trigger():
                     # We wait until we find a trigger file in the filesystem
-                    trigger_filename = '{0}/.trigger'.format(dataset_settings['mountpoint'])
+                    trigger_filename = '{0}/{1}'.format(dataset_settings['mountpoint'], TRIGGER_FILENAME)
                     if os.path.exists(trigger_filename):
                         log_info('[{0}] - Trigger found on {1}'.format(dataset, dataset))
                         os.remove(trigger_filename)
