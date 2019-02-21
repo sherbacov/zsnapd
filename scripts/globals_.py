@@ -8,6 +8,7 @@ from magcode.core.globals_ import settings
 CLEANER_REGEX = r'^((?P<keep>[0-9]+)k){0,1}((?P<hours>[0-9]+)h){0,1}(?P<days>[0-9]+)d(?P<weeks>[0-9]+)w(?P<months>[0-9]+)m(?P<years>[0-9]+)y$'
 SNAPSHOTNAME_REGEX = r'^(\d{4})(1[0-2]|0[1-9])(0[1-9]|[1-2]\d|3[0-1])(([0-1]\d|2[0-3])([0-5]\d)){0,1}$'
 SNAPSHOTNAME_FMTSPEC = '%Y%m%d%H%M'
+TRIGGER_FILENAME = '.trigger'
 DEFAULT_BUFFER_SIZE = '512M'
 
 # settings for where files are

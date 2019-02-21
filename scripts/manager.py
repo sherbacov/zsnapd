@@ -40,6 +40,7 @@ from scripts.helper import Helper
 from scripts.config import MeterTime
 from scripts.globals_ import SNAPSHOTNAME_FMTSPEC
 from scripts.globals_ import SNAPSHOTNAME_REGEX
+from scripts.globals_ import TRIGGER_FILENAME
 
 PROC_FAILURE = 0
 PROC_EXECUTED = 1
