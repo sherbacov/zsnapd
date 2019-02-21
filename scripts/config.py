@@ -30,6 +30,7 @@ import re
 import errno
 import time
 import configparser
+from subprocess import SubprocessError
 
 from magcode.core.globals_ import *
 from magcode.core.utility import MagCodeConfigError
@@ -37,6 +38,7 @@ from magcode.core.utility import get_numeric_setting
 
 from scripts.globals_ import CLEANER_REGEX
 from scripts.globals_ import DEFAULT_BUFFER_SIZE
+from scripts.zfs import ZFS
 
 TMP_HR_REGEX = r'([0-1]*\d|2[0-3])'
 TMP_HRMIN_REGEX = TMP_HR_REGEX + r':([0-5]\d)'
@@ -94,6 +96,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
 DEFAULT_ENDPOINT_PORT = 22
 DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
 DATE_SPEC = '%Y%m%d '
+ZFS_MOUNTPOINT_NONE = ('legacy', 'none')
 
 
 def _check_time_syntax(section_name, item, time_spec):
@@ -347,9 +350,16 @@ class Config(object):
             # Destroy ds_config and re read it
             del ds_config
             ds_config = read_config(ds_filename, ds_dirname, ds_dict)
+            datasets = ZFS.get_datasets()
             for dataset in ds_config.sections():
+                # Calculate mountpoint
+                zfs_mountpoint = None
+                if dataset in datasets:
+                    zfs_mountpoint = datasets[dataset]['mountpoint']
+                    zfs_mountpoint = zfs_mountpoint if zfs_mountpoint not in ZFS_MOUNTPOINT_NONE else None
+                mountpoint = ds_config.get(dataset, 'mountpoint', fallback=zfs_mountpoint)
                 old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
-                ds_settings[dataset] = {'mountpoint': ds_config.get(dataset, 'mountpoint', fallback=None),
+                ds_settings[dataset] = {'mountpoint': mountpoint,
                                      'time': MeterTime(ds_config.get(dataset, 'time')),
                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                          fallback=old_setting_repl_all),
@@ -413,6 +423,11 @@ class Config(object):
         except MagCodeConfigError as e:
             log_error(str(e))
             systemd_exit(os.EX_CONFIG, SDEX_CONFIG)
+
+        # Handle errors running zfs list -pH etc
+        except (RuntimeError, SubprocessError) as e:
+            log_error(str(e))
+            systemd_exit(os.EX_SOFTWARE, SDEX_GENERIC)
 
         return ds_settings
 
