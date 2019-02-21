@@ -40,21 +40,22 @@ from scripts.globals_ import CLEANER_REGEX
 from scripts.globals_ import DEFAULT_BUFFER_SIZE
 from scripts.zfs import ZFS
 
-TMP_TRIGGER_REGEX = r'trigger'
+TEMPLATE_KEY = r'{template}'
+TMP_STRVAL_REGEX = r'(trigger|' + TEMPLATE_KEY + r')'
 TMP_HR_REGEX = r'([0-1]*\d|2[0-3])'
 TMP_HRMIN_REGEX = TMP_HR_REGEX + r':([0-5]\d)'
-TM_TRIGGER_REGEX = r'^' + TMP_TRIGGER_REGEX + r'$'
+TM_STRVAL_REGEX = r'^' + TMP_STRVAL_REGEX + r'$'
 TM_HRMIN_REGEX = r'^' + TMP_HRMIN_REGEX + r'$'
 TMP_RANGE_REGEX = TMP_HRMIN_REGEX + r'\s*-\s*' + TMP_HRMIN_REGEX + r'(\s*/\s*(' + TMP_HRMIN_REGEX + r'|' + TMP_HR_REGEX + r')){0,1}'
 TM_RANGE_REGEX = r'^' + TMP_RANGE_REGEX + r'$'
-TMP_HRMINTRIGGER_REGEX = r'(' + TMP_TRIGGER_REGEX + r'|' + TMP_HRMIN_REGEX + r')'
-TM_HRMINTRIGGER_REGEX = r'^' + TMP_HRMINTRIGGER_REGEX + r'$'
-TMP_HRMINRANGETRIGGER_REGEX = r'(' + TMP_TRIGGER_REGEX + r'|' + TMP_HRMIN_REGEX + r'|' + TMP_RANGE_REGEX + r')'
-TM_HRMINRANGETRIGGER_REGEX = r'^' + TMP_HRMINRANGETRIGGER_REGEX + r'$'
+TMP_HRMINSTRVAL_REGEX = r'(' + TMP_STRVAL_REGEX + r'|' + TMP_HRMIN_REGEX + r')'
+TM_HRMINSTRVAL_REGEX = r'^' + TMP_HRMINSTRVAL_REGEX + r'$'
+TMP_HRMINRANGESTRVAL_REGEX = r'(' + TMP_STRVAL_REGEX + r'|' + TMP_HRMIN_REGEX + r'|' + TMP_RANGE_REGEX + r')'
+TM_HRMINRANGESTRVAL_REGEX = r'^' + TMP_HRMINRANGESTRVAL_REGEX + r'$'
 TMP_HRMINCOMMA_REGEX = r'(' + TMP_HRMIN_REGEX + r'\s*,\s*){1,}' + TMP_HRMIN_REGEX
 TM_HRMINCOMMA_REGEX  = r'^' + TMP_HRMINCOMMA_REGEX + r'$'
-TMP_HRMINRANGETRIGGERCOMMA_REGEX = r'(' + TMP_HRMINRANGETRIGGER_REGEX + r'\s*,\s*){1,}' + TMP_HRMINRANGETRIGGER_REGEX
-TM_HRMINRANGETRIGGERCOMMA_REGEX  = r'^' + TMP_HRMINRANGETRIGGERCOMMA_REGEX + r'$'
+TMP_HRMINRANGESTRVALCOMMA_REGEX = r'(' + TMP_HRMINRANGESTRVAL_REGEX + r'\s*,\s*){1,}' + TMP_HRMINRANGESTRVAL_REGEX
+TM_HRMINRANGESTRVALCOMMA_REGEX  = r'^' + TMP_HRMINRANGESTRVALCOMMA_REGEX + r'$'
 
 ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
 ds_name_reserved_regex = r'^(log|DEFAULT|(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*)$'
@@ -103,23 +104,31 @@ DATE_SPEC = '%Y%m%d '
 ZFS_MOUNTPOINT_NONE = ('legacy', 'none')
 
 
-def _check_time_syntax(section_name, item, time_spec):
+def _check_time_syntax(section_name, item, time_spec, checking_template=False):
     """
     Function called to check time spec syntax
     """
     if (',' in time_spec):
-        if (re.match(TM_HRMINRANGETRIGGERCOMMA_REGEX, time_spec) is None):
-            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, HH:MM-HH:MM/[HH:MM|HH|H], trigger, ...'.".format(section_name, item, time_spec))
+        if (re.match(TM_HRMINRANGESTRVALCOMMA_REGEX, time_spec) is None):
+            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, HH:MM-HH:MM/[HH:MM|HH|H], {3}, trigger, ...'."
+                    .format(section_name, item, time_spec, TEMPLATE_KEY))
             return False
     else:
-        if (re.match(TM_HRMINRANGETRIGGER_REGEX, time_spec) is None):
-            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]' or 'trigger'.".format(section_name, item, time_spec))
+        if (re.match(TM_HRMINRANGESTRVAL_REGEX, time_spec) is None):
+            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]', '{3}' or 'trigger'."
+                    .format(section_name, item, time_spec, TEMPLATE_KEY))
             return False
-    test_time = MeterTime()
-    if not test_time(time_spec, section_name, item):
-        del test_time
-        return False
-    del test_time
+    if time_spec.find(TEMPLATE_KEY) != -1:
+        if checking_template:
+            log_error("[{0}] {1} - value '{2}' invalid. Templates can't have '{3}' as part of the time specifier."
+                    .format(section_name, item, time_spec, TEMPLATE_KEY))
+            return False
+        else:
+            lfind = time_spec.find(TEMPLATE_KEY)
+            rfind = time_spec.rfind(TEMPLATE_KEY)
+            if lfind != rfind:
+                log_error("[{0}] {1} - value '{2}' invalid. More than one '{3}' found.".format(section_name, item, time_spec, TEMPLATE_KEY))
+                return False
     return True
 
 ds_syntax_dict['time'] = _check_time_syntax
@@ -138,8 +147,9 @@ class MeterTime(object):
         self.prev_secs = int(time.time()) - hysteresis_time
         self.time_spec = time_spec
         self.date = self._midnight_date()
-        self.time_list = self._parse_timespec(self.time_spec) if self.time_spec else []
+        # Do this before calling _parse_timespec(), as that routine sets it!
         self.trigger_flag = False
+        self.time_list = self._parse_timespec(self.time_spec) if self.time_spec else []
 
     def __repr__(self):
         return '{0}'.format(self.time_spec)
@@ -196,7 +206,11 @@ class MeterTime(object):
                 self.trigger_flag = True
                 if syntax_check:
                     return[1,]
-                return ([])
+                return([])
+            if (time_spec == TEMPLATE_KEY):
+                if syntax_check:
+                    return([1,])
+                return([])
             if re.match(TM_HRMIN_REGEX, time_spec):
                 return ([parse_hrmin(time_spec)])
             if re.match(TM_RANGE_REGEX, time_spec):
@@ -238,7 +252,7 @@ class MeterTime(object):
 
 class Config(object):
     @staticmethod
-    def _check_section_syntax(section, section_name):
+    def _check_section_syntax(section, section_name, checking_template=False):
         result = True
         for item in section.keys():
             try:
@@ -251,7 +265,7 @@ class Config(object):
                 continue
             value = section[item]
             if type(ds_syntax_dict[item]) == type(_check_time_syntax):
-                if not ds_syntax_dict[item](section_name, item, value):
+                if not ds_syntax_dict[item](section_name, item, value, checking_template):
                     result = False
                 continue
             if (not re.match(ds_syntax_dict[item], value)):
@@ -278,7 +292,8 @@ class Config(object):
                 log_error("Template name '{0}' is invalid.".format(template))
                 result = False
             # Check syntax of each dataset group 
-            if not Config._check_section_syntax(template_config[template], template):
+            if not Config._check_section_syntax(template_config[template], template,
+                    checking_template=True):
                 result = False
         return result
 
@@ -344,7 +359,8 @@ class Config(object):
             ds_filename = settings['dataset_config_file']
             ds_dirname = settings['dataset_config_dir']
             ds_config = read_config(ds_filename, ds_dirname)
-            if not Config._check_dataset_syntax(ds_config):
+            invalid_config = not bool(Config._check_dataset_syntax(ds_config))
+            if invalid_config:
                 raise MagCodeConfigError("Invalid dataset syntax in config file/dir '{0}' or '{1}'"
                         .format(ds_filename, ds_dirname))
 
@@ -366,9 +382,26 @@ class Config(object):
                     zfs_mountpoint = datasets[dataset]['mountpoint']
                     zfs_mountpoint = zfs_mountpoint if zfs_mountpoint not in ZFS_MOUNTPOINT_NONE else None
                 mountpoint = ds_config.get(dataset, 'mountpoint', fallback=zfs_mountpoint)
+                # Work out time_spec
+                time_spec = ds_config.get(dataset, 'time')
+                if time_spec.find(TEMPLATE_KEY) != -1:
+                    try:
+                        time_spec = time_spec.replace(TEMPLATE_KEY, ds_dict[dataset]['time'])
+                    except KeyError:
+                        log_error("[{0}] - template section does not exist.".format(dataset))
+                        invalid_config = True
+                        continue
+                test_time = MeterTime()
+                if not test_time(time_spec, dataset, 'time'):
+                    del test_time
+                    invalid_config = True
+                    continue
+                del test_time
+
+                # Deal with deprecated settings
                 old_setting_repl_all = ds_config.getboolean(dataset, 'replicate_all', fallback=True)
                 ds_settings[dataset] = {'mountpoint': mountpoint,
-                                     'time': MeterTime(ds_config.get(dataset, 'time')),
+                                     'time': MeterTime(time_spec),
                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                          fallback=old_setting_repl_all),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
@@ -414,6 +447,10 @@ class Config(object):
                                                       'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False),
                                                       'endpoint_host': host,
                                                       'endpoint_port': port}
+
+            if invalid_config:
+                raise MagCodeConfigError("Invalid dataset syntax in config file/dir '{0}', '{1}', '{2}', or '{3}'"
+                        .format(template_filename, template_dirname, ds_filename, ds_dirname))
        
         # Handle file opening and read errors
         except (IOError,OSError) as e:
