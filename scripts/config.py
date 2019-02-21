@@ -41,7 +41,8 @@ from scripts.globals_ import DEFAULT_BUFFER_SIZE
 from scripts.zfs import ZFS
 
 TEMPLATE_KEY = r'{template}'
-TMP_STRVAL_REGEX = r'(trigger|' + TEMPLATE_KEY + r')'
+TRIGGER_STR = r'trigger'
+TMP_STRVAL_REGEX = r'(' + TRIGGER_STR + '|' + TEMPLATE_KEY + r')'
 TMP_HR_REGEX = r'([0-1]*\d|2[0-3])'
 TMP_HRMIN_REGEX = TMP_HR_REGEX + r':([0-5]\d)'
 TM_STRVAL_REGEX = r'^' + TMP_STRVAL_REGEX + r'$'
@@ -110,13 +111,13 @@ def _check_time_syntax(section_name, item, time_spec, checking_template=False):
     """
     if (',' in time_spec):
         if (re.match(TM_HRMINRANGESTRVALCOMMA_REGEX, time_spec) is None):
-            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, HH:MM-HH:MM/[HH:MM|HH|H], {3}, trigger, ...'."
-                    .format(section_name, item, time_spec, TEMPLATE_KEY))
+            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM, HH:MM, HH:MM-HH:MM/[HH:MM|HH|H], {3}, {4}, ...'."
+                    .format(section_name, item, time_spec, TEMPLATE_KEY, TRIGGER_STR))
             return False
     else:
         if (re.match(TM_HRMINRANGESTRVAL_REGEX, time_spec) is None):
-            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]', '{3}' or 'trigger'."
-                    .format(section_name, item, time_spec, TEMPLATE_KEY))
+            log_error("[{0}] {1} - value '{2}' invalid. Must be of form 'HH:MM', 'HH:MM-HH:MM/[HH:MM|HH|H]', '{3}' or '{4}'."
+                    .format(section_name, item, time_spec, TEMPLATE_KEY, TRIGGER_STR))
             return False
     if time_spec.find(TEMPLATE_KEY) != -1:
         if checking_template:
@@ -202,7 +203,7 @@ class MeterTime(object):
             return(tm_list)
 
         def parse_spec(time_spec):
-            if (time_spec == 'trigger'):
+            if (time_spec == TRIGGER_STR):
                 self.trigger_flag = True
                 if syntax_check:
                     return[1,]
@@ -241,7 +242,7 @@ class MeterTime(object):
         if (now_date > self.date):
             # Now a new day, reinitialise time_list
             self.date = now_date
-            self.time_list = self._parse_timespec(self.time_spec) if (self.time_spec and self.time_spec != 'trigger') else []
+            self.time_list = self._parse_timespec(self.time_spec) if self.time_spec else []
         prev_secs = self.prev_secs
         for inst in self.time_list:
             if ( prev_secs < inst <= now):
