@@ -1,3 +1,12 @@
+zsnapd (0.8.9b-1~1.gbp9bc385) unstable; urgency=medium
+
+  ** SNAPSHOT build @9bc38552f1c45b2838643856214302a3bd78c868 **
+
+  * WIP - initial replicate2 config reading
+  * replicate2 2nd dataset target support
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Tue, 09 Apr 2019 13:47:05 +1200
+
 zsnapd (0.8.9a-1) unstable; urgency=medium
 
   * Version 0.8.9a
