@@ -157,24 +157,37 @@ A summary of the different options:
 * time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, 'trigger', or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  Alon with the timestamps, 'trigger' indicates that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset. As shown above, '{template}' is substituted for the time specification string from the template for that dataset in the dataset file.  Thus the time setting for an individual dataset using a template can be augmented in its definition.
 * snapshot: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
 * replicate_endpoint: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
-* replicate_endpoint_host: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* replicate_endpoint_host: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* replicate2_endpoint_host: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
 * replicate_endpoint_port: port that has to be remotely accessed
+* replicate2_endpoint_port: port that has to be remotely accessed
 * replicate_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
+* replicate2_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
 * replicate_target: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
+* replicate2_target: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
 * replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
 * replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
+* replicate2_full_clone: Full clone of dataset and all sub ordinate datasets and properties
 * replicate_send_compression: zfs send using compressed data from disk
+* replicate2_send_compression: zfs send using compressed data from disk
 * replicate_send_properties: zfs send sends all properties of dataset
+* replicate2_send_properties: zfs send sends all properties of dataset
 * replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
+* replicate2_full_clone: Full clone of dataset and all sub ordinate datasets and properties
 * buffer_size: Give mbuffer buffer size in units of k, M, and G - kilobytes, Megabytes, and Gigabytes respectively.
+* buffer2_size: Give mbuffer buffer size in units of k, M, and G - kilobytes, Megabytes, and Gigabytes respectively.
 * compression: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
+* compression2: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
 * schema: In case the snapshots should be cleaned, this is the schema the manager will use to clean.
 * local_schema: For local snapshot cleaning/aging when dataset is receptical for remote source when snapshots are pulled
-* local_schema: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
+* remote_schema: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
+* remote2_schema: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
 * preexec: A command that will be executed, before snapshot/replication. Should be omitted if nothing should be executed
 * postexec: A command that will be executed, after snapshot/replication,  but before the cleanup. Should be omitted if nothing should be executed
 * clean_all: Clean/age all snapshots in dataset - default is False - ie zsnapd only
 * local_clean_all: Setting for local dataset when replicating source is remote
+* remote_clean_all: Setting for remove dataset when replicating source is local
+* remote2_clean_all: Setting for remove dataset when replicating source is local
 * all_snapshots: Replicate all snapshots in dataset - Default is True - ie all snapshots in dataset
 * replicate_all: Deprecated.  Use all_snapshots
 * log_commands: Per dataset log all commands executed for the dataset to DEBUG.  For checking what the program is doing exactly, helpful for auditing and security. 
