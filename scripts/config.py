@@ -91,14 +91,25 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_endpoint_host': HOST_REGEX,
         'replicate_endpoint_port': PORT_REGEX,
         'replicate_endpoint_command': SHELLFORMAT_REGEX,
+        'replicate2_full_clone': BOOLEAN_REGEX,
+        'replicate2_send_compression': BOOLEAN_REGEX,
+        'replicate2_send_properties': BOOLEAN_REGEX,
+        'replicate2_target': ds_name_syntax,
+        'replicate2_endpoint': NETCMD_REGEX,
+        'replicate2_endpoint_host': HOST_REGEX,
+        'replicate2_endpoint_port': PORT_REGEX,
+        'replicate2_endpoint_command': SHELLFORMAT_REGEX,
         'buffer_size': BUFFER_SIZE_REGEX,
         'compression': PATH_REGEX,
+        'compression2': PATH_REGEX,
         'schema': CLEANER_REGEX,
         'local_schema': CLEANER_REGEX,
         'remote_schema': CLEANER_REGEX,
+        'remote2_schema': CLEANER_REGEX,
         'clean_all': BOOLEAN_REGEX,
         'local_clean_all': BOOLEAN_REGEX,
         'remote_clean_all': BOOLEAN_REGEX,
+        'remote2_clean_all': BOOLEAN_REGEX,
         'template': template_name_syntax,
         }
 DEFAULT_ENDPOINT_PORT = 22
@@ -426,9 +437,11 @@ class Config(object):
                                      'schema': ds_config.get(dataset, 'schema'),
                                      'local_schema': ds_config.get(dataset, 'local_schema', fallback=None),
                                      'remote_schema': ds_config.get(dataset, 'remote_schema', fallback=None),
+                                     'remote2_schema': ds_config.get(dataset, 'remote2_schema', fallback=None),
                                      'clean_all': ds_config.get(dataset, 'clean_all', fallback=False),
                                      'local_clean_all': ds_config.get(dataset, 'local_clean_all', fallback=None),
                                      'remote_clean_all': ds_config.get(dataset, 'remote_clean_all', fallback=None),
+                                     'remote2_clean_all': ds_config.get(dataset, 'remote2_clean_all', fallback=None),
                                      'preexec': ds_config.get(dataset, 'preexec', fallback=None),
                                      'postexec': ds_config.get(dataset, 'postexec', fallback=None),
                                      'replicate_postexec': ds_config.get(dataset, 'replicate_postexec', fallback=None),
@@ -439,6 +452,8 @@ class Config(object):
                     ds_settings[dataset]['local_clean_all'] = ds_settings[dataset]['clean_all']
                 if (ds_settings[dataset]['remote_clean_all'] is None):
                     ds_settings[dataset]['remote_clean_all'] = ds_settings[dataset]['clean_all']
+                if (ds_settings[dataset]['remote2_clean_all'] is None):
+                    ds_settings[dataset]['remote2_clean_all'] = ds_settings[dataset]['clean_all']
                 if ((ds_config.has_option(dataset, 'replicate_endpoint_host') or ds_config.has_option(dataset, 'replicate_endpoint'))
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')
@@ -461,6 +476,32 @@ class Config(object):
                                                       'send_compression': ds_config.getboolean(dataset, 'replicate_send_compression', fallback=False),
                                                       'send_properties': ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False),
                                                       'buffer_size': ds_config.get(dataset, 'buffer_size', fallback=DEFAULT_BUFFER_SIZE),
+                                                      'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False),
+                                                      'endpoint_host': host,
+                                                      'endpoint_port': port}
+
+                if ((ds_config.has_option(dataset, 'replicate2_endpoint_host') or ds_config.has_option(dataset, 'replicate2_endpoint'))
+                        and (ds_config.has_option(dataset, 'replicate2_target'))):
+                    host = ds_config.get(dataset, 'replicate2_endpoint_host', fallback='')
+                    port = ds_config.get(dataset, 'replicate2_endpoint_port', fallback=DEFAULT_ENDPOINT_PORT)
+                    if ds_config.has_option(dataset, 'replicate2_endpoint_host'):
+                        command = ds_config.get(dataset, 'replicate2_endpoint_command', fallback=DEFAULT_ENDPOINT_CMD)
+                        if host:
+                            endpoint = command.format(port=port, host=host)
+                        else:
+                            endpoint = ''
+                    else:
+                        endpoint = ds_config.get(dataset, 'replicate2_endpoint')
+                    ds_settings[dataset]['replicate2'] = {'endpoint': endpoint,
+                                                      'target': ds_config.get(dataset, 'replicate2_target', fallback=None),
+                                                      'source': None,
+                                                      'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
+                                                            fallback=old_setting_repl_all),
+                                                      'compression': ds_config.get(dataset, 'compression2', fallback=None),
+                                                      'full_clone': ds_config.getboolean(dataset, 'replicate2_full_clone', fallback=False),
+                                                      'send_compression': ds_config.getboolean(dataset, 'replicate2_send_compression', fallback=False),
+                                                      'send_properties': ds_config.getboolean(dataset, 'replicate2_send_properties', fallback=False),
+                                                      'buffer_size': ds_config.get(dataset, 'buffer2_size', fallback=DEFAULT_BUFFER_SIZE),
                                                       'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False),
                                                       'endpoint_host': host,
                                                       'endpoint_port': port}
