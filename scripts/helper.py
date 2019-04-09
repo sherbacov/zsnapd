@@ -39,7 +39,7 @@ class Helper(object):
     """
 
     @staticmethod
-    def run_command(command, cwd, endpoint='', log_command=False):
+    def run_command(command, cwd, endpoint='', log_command=False, filter_error=''):
         """
         Executes a command, returning the output. If the command fails, it raises
         """
@@ -61,6 +61,7 @@ class Helper(object):
         err = err.strip()
         return_code = process.poll()
         if return_code != 0:
-            raise RuntimeError('{0} failed with return value {1} and error message: {2}'.format(command, return_code, err))
+            if (not filter_error or err.find(filter_error) == -1):
+               raise RuntimeError('{0} failed with return value {1} and error message: {2}'.format(command, return_code, err))
         return re.sub(pattern, '', out)
 

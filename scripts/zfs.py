@@ -163,13 +163,14 @@ class ZFS(object):
         return 'zsm' in Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
-    def hold(target, snapshot, endpoint='', log_command=False):
+    def hold(target, snapshot, endpoint='', log_command=False, may_exist=False):
+        filter_error = 'tag already exists' if may_exist else ''
         if endpoint == '':
             command = 'zfs hold zsm {0}@{1}'.format(target, snapshot)
-            Helper.run_command(command, '/', log_command=log_command)
+            Helper.run_command(command, '/', log_command=log_command, filter_error=filter_error)
         else:
             command = '{0} \'zfs hold zsm {1}@{2}\''.format(endpoint, target, snapshot)
-            Helper.run_command(command, '/', log_command=log_command)
+            Helper.run_command(command, '/', log_command=log_command, filter_error=filter_error)
 
     @staticmethod
     def release(target, snapshot, endpoint='', log_command=False):
