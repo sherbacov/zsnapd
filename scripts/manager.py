@@ -185,6 +185,7 @@ class Manager(object):
         src_endpoint = '' if push else replicate_settings['endpoint']
         dst_endpoint = replicate_settings['endpoint'] if push else ''
         src_host = gethostname().split('.')[0] if push else replicate_settings['endpoint_host']
+        dst_host = gethostname().split('.')[0] if not push else replicate_settings['endpoint_host']
         local_dataset = src_dataset if push else dst_dataset
         full_clone = replicate_settings['full_clone']
         send_compression = replicate_settings['send_compression']
@@ -197,7 +198,7 @@ class Manager(object):
                 'send_compression': send_compression, 'send_properties': send_properties,
                 'buffer_size': buffer_size, 'compression': compression,
                 'log_command': log_command }
-        log_info('[{0}] - Replicating [{1}]:{2}'.format(local_dataset, src_host, src_dataset))
+        log_info('[{0}] - Replicating [{1}]:{2} to [{3}]:{4}'.format(local_dataset, src_host, src_dataset, dst_host, dst_dataset))
         last_common_snapshot = None
         index_last_common_snapshot = None
         # Search for the last src snapshot that is available in dst
@@ -219,7 +220,7 @@ class Manager(object):
                 log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                 ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                         direction=replicate_dirN, **extra_args)
-                ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
+                ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command, may_exist=True)
                 ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
                 ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint, log_command=log_command)
                 ZFS.release(dst_dataset, prevsnap_name, endpoint=dst_endpoint, log_command=log_command)
@@ -235,7 +236,7 @@ class Manager(object):
                     log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                     ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                             direction=replicate_dirN, **extra_args)
-                    ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
+                    ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command, may_exist=True)
                     ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
                     ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint, log_command=log_command)
                     ZFS.release(dst_dataset, prevsnap_name, endpoint=dst_endpoint, log_command=log_command)
@@ -250,7 +251,7 @@ class Manager(object):
             log_info('  {0}@         > {0}@{1} ({2})'.format(src_dataset, snap_name, size))
             ZFS.replicate(src_dataset, None, snap_name, dst_dataset, replicate_settings['endpoint'],
                     direction=replicate_dirN, **extra_args)
-            ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
+            ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command, may_exist=True)
             ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
             if full_clone:
                 for snapshot in src_snapshots:
@@ -258,7 +259,7 @@ class Manager(object):
             else:
                 dst_snapshots.update({snapshot:src_snapshots[snapshot]})
             result = PROC_CHANGED
-        log_info('[{0}] - Replicating [{1}]:{2} complete'.format(local_dataset, src_host, src_dataset))
+        log_info('[{0}] - Replicating [{1}]:{2} to [{3}]:{4} complete'.format(local_dataset, src_host, src_dataset, dst_host, dst_dataset))
         return result
 
     @staticmethod
