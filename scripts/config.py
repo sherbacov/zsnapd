@@ -434,6 +434,7 @@ class Config(object):
                                          fallback=old_setting_repl_all),
                                      'snapshot': ds_config.getboolean(dataset, 'snapshot'),
                                      'replicate': None,
+                                     'replicate2': None,
                                      'schema': ds_config.get(dataset, 'schema'),
                                      'local_schema': ds_config.get(dataset, 'local_schema', fallback=None),
                                      'remote_schema': ds_config.get(dataset, 'remote_schema', fallback=None),
@@ -485,7 +486,7 @@ class Config(object):
                     host = ds_config.get(dataset, 'replicate2_endpoint_host', fallback='')
                     port = ds_config.get(dataset, 'replicate2_endpoint_port', fallback=DEFAULT_ENDPOINT_PORT)
                     if ds_config.has_option(dataset, 'replicate2_endpoint_host'):
-                        command = ds_config.get(dataset, 'replicate2_endpoint_command', fallback=DEFAULT_ENDPOINT_CMD)
+                        command = ds_config.get(dataset, 'replicate2_endpoint_command', fallback=ds_config.get(dataset, 'replicate_endpoint_command', fallback=DEFAULT_ENDPOINT_CMD))
                         if host:
                             endpoint = command.format(port=port, host=host)
                         else:
