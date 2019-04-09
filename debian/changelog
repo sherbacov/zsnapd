@@ -1,3 +1,9 @@
+zsnapd (0.8.9d-1~1.gbp9bc387) unstable; urgency=medium
+
+  * Log message updates and no error on existing hold
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 10 Apr 2019 11:20:57 +1200
+
 zsnapd (0.8.9c-1~1.gbp9bc386) unstable; urgency=medium
 
   * Update changelog for 0.8.9b-1~1.gbp9bc385 release
