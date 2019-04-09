@@ -74,12 +74,11 @@ class IsConnected(object):
             return False
         return True
 
-    def test_unconnected(self, dataset_settings, local_dataset=''):
+    def test_unconnected(self, replicate_param, local_dataset=''):
         """
         Check that endpoint is unconnected
         """
         self.local_dataset = local_dataset
-        replicate_param = dataset_settings['replicate']
         if (replicate_param and replicate_param['endpoint_host']):
             host = replicate_param['endpoint_host']
             port = replicate_param['endpoint_port']
@@ -142,7 +141,7 @@ class Manager(object):
                     if take_snapshot is True or replicate is True or clean is True:
                         if dataset_settings['time'].is_trigger():
                             # Check endpoint for trigger is connected
-                            if test_reachable and is_connected.test_unconnected(dataset_settings):
+                            if test_reachable and is_connected.test_unconnected(dataset_settings['replicate']):
                                 continue
                             # Trigger file testing and creation
                             trigger_filename = '{0}/{1}'.format(dataset_settings['mountpoint'], TRIGGER_FILENAME)
@@ -284,14 +283,17 @@ class Manager(object):
                 dataset_settings = ds_settings[dataset]
                 take_snapshot = dataset_settings['snapshot'] is True
                 replicate = dataset_settings['replicate'] is not None
+                replicate2 = dataset_settings['replicate2'] is not None
                 clean = bool(dataset_settings['schema'])
 
                 # Decide whether we need to handle this dataset
-                if not take_snapshot and not replicate and not clean:
+                if not take_snapshot and not replicate and not replicate2 and not clean:
                     continue
  
                 replicate_settings = dataset_settings['replicate']
+                replicate2_settings = dataset_settings['replicate2']
                 full_clone = replicate_settings['full_clone'] if replicate else False
+                full_clone2 = replicate2_settings['full_clone'] if replicate2 else False
                 log_command = dataset_settings['log_commands']
                 local_snapshots = snapshots.get(dataset, OrderedDict())
                 # Manage what snapshots we operate on - everything or zsnapd only
@@ -324,14 +326,16 @@ class Manager(object):
                             Helper.run_command(dataset_settings['postexec'], '/', log_command=log_command)
 
                     # Replicating, if required
-                    # If network replicating, check connectivity here
-                    test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
-                    if test_unconnected:
-                        log_info("[{0}] - Skipping as '{1}:{2}' unreachable"
-                                .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
-                        continue
-
+                    result = PROC_FAILURE
+                    result2 = PROC_FAILURE
                     if (replicate is True):
+                        # If network replicating, check connectivity here
+                        test_unconnected = is_connected.test_unconnected(replicate_settings, local_dataset=dataset)
+                        if test_unconnected:
+                            log_info("[{0}] - Skipping as '{1}:{2}' unreachable"
+                                    .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
+                            continue
+
                         remote_dataset = replicate_settings['target']
                         remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
                                 all_snapshots=dataset_settings['all_snapshots'])
@@ -341,9 +345,26 @@ class Manager(object):
                         if (dataset_settings['remote_schema']):
                             Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['remote_schema'], log_command=log_command,
                                     all_snapshots=dataset_settings['remote_clean_all'])
-                        # Post execution command
-                        if (result and dataset_settings['replicate_postexec'] is not None):
-                            Helper.run_command(dataset_settings['replicate_postexec'], '/', log_command=log_command)
+                    if (replicate2 is True):
+                        # If network replicating, check connectivity here
+                        test_unconnected = is_connected.test_unconnected(replicate2_settings, local_dataset=dataset)
+                        if test_unconnected:
+                            log_info("[{0}] - Skipping as '{1}:{2}' unreachable"
+                                    .format(dataset, replicate2_settings['endpoint_host'], replicate2_settings['endpoint_port']))
+                            continue
+
+                        remote_dataset = replicate2_settings['target']
+                        remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate2_settings['endpoint'], log_command=log_command,
+                                all_snapshots=dataset_settings['all_snapshots'])
+                        remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
+                        result2 = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate2_settings)
+                        # Clean snapshots remotely if one has been taken - only kept snapshots will allow aging
+                        if (dataset_settings['remote2_schema']):
+                            Cleaner.clean(remote_dataset, remote_snapshots, dataset_settings['remote2_schema'], log_command=log_command,
+                                    all_snapshots=dataset_settings['remote2_clean_all'])
+                    # Post execution command
+                    if ((result or result2) and dataset_settings['replicate_postexec'] is not None):
+                        Helper.run_command(dataset_settings['replicate_postexec'], '/', log_command=log_command)
                 else:
                     # Pull logic for remote site
                     # Replicating, if required
