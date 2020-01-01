@@ -1,3 +1,9 @@
+zsnapd (0.8.9d-1) stable unstable; urgency=medium
+
+  * Move package to contrib section of archive. (Closes: #919595)
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 02 Jan 2020 11:04:48 +1300
+
 zsnapd (0.8.9d-1~1.gbp9bc387) unstable; urgency=medium
 
   * Log message updates and no error on existing hold
