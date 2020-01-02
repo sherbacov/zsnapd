@@ -1,3 +1,9 @@
+zsnapd (0.8.9d-2) unstable; urgency=medium
+
+  * Correct distribution entries to unstable only.
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 02 Jan 2020 13:20:50 +1300
+
 zsnapd (0.8.9d-1) unstable; urgency=medium
 
   * Move package to contrib section of archive. (Closes: #919595)
