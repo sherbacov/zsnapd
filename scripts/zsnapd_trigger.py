@@ -37,7 +37,7 @@ import scripts.globals_
 from scripts.manager import Manager
 from scripts.config import Config
 
-USAGE_MESSAGE = "Usage: %s [-hrv] [-c config_file]"
+USAGE_MESSAGE = "Usage: %s [-hrv] [-c config_file] [mnt-point-or-dataset, mnt-point-or-dataset, ...]"
 COMMAND_DESCRIPTION = "ZFS Snap Daemon trigger utility"
 
 
