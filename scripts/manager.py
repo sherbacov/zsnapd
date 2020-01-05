@@ -190,13 +190,14 @@ class Manager(object):
         full_clone = replicate_settings['full_clone']
         send_compression = replicate_settings['send_compression']
         send_properties = replicate_settings['send_properties']
+        send_raw = replicate_settings['send_raw']
         all_snapshots = replicate_settings['all_snapshots']
         buffer_size = replicate_settings['buffer_size']
         compression = replicate_settings['compression']
         log_command = replicate_settings['log_commands']
         extra_args = {'full_clone': full_clone, 'all_snapshots': all_snapshots,
                 'send_compression': send_compression, 'send_properties': send_properties,
-                'buffer_size': buffer_size, 'compression': compression,
+                'buffer_size': buffer_size, 'compression': compression, 'send_raw': send_raw,
                 'log_command': log_command }
         log_info('[{0}] - Replicating [{1}]:{2} to [{3}]:{4}'.format(local_dataset, src_host, src_dataset, dst_host, dst_dataset))
         last_common_snapshot = None

@@ -170,6 +170,8 @@ A summary of the different options:
 * replicate2_full_clone: Full clone of dataset and all sub ordinate datasets and properties
 * replicate_send_compression: zfs send using compressed data from disk
 * replicate2_send_compression: zfs send using compressed data from disk
+* replicate_send_raw: zfs send using compressed data from disk
+* replicate2_send_raw: zfs send using compressed data from disk
 * replicate_send_properties: zfs send sends all properties of dataset
 * replicate2_send_properties: zfs send sends all properties of dataset
 * replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
