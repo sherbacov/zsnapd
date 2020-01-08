@@ -103,7 +103,7 @@ class ZFS(object):
     @staticmethod
     def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', buffer_size=DEFAULT_BUFFER_SIZE, compression=None,
             full_clone=False, all_snapshots=True, send_compression=False, send_properties=False, send_raw=False, receive_no_mountpoint=False,
-            log_command=False):
+            receive_save=False, log_command=False):
         """
         Replicates a dataset towards a given endpoint/target (push)
         Replicates a dataset from a given endpoint to a local target (pull)
@@ -130,6 +130,11 @@ class ZFS(object):
             send_args += ' '
 
         receive_args = ''
+        if receive_save:
+            receive_args = 's'
+        if receive_args:
+            recieve_args = '-' + recieve_args
+            recieve_args += ' '
         if receive_no_mountpoint:
             receive_args += '-x mountpoint '
 

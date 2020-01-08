@@ -168,10 +168,14 @@ A summary of the different options:
 * replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
 * replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
 * replicate2_full_clone: Full clone of dataset and all sub ordinate datasets and properties
+* replicate_receive_save: If transfer fails create a save point for resuming transfer
+* replicate2_receive_save: If transfer fails create a save point for resuming transfer
+* replicate_receive_no_mountpoint: Remove mountpoint from sent properties
+* replicate2_receive_no_mountpoint: Remove mountpoint from sent properties
 * replicate_send_compression: zfs send using compressed data from disk
 * replicate2_send_compression: zfs send using compressed data from disk
-* replicate_send_raw: zfs send using compressed data from disk
-* replicate2_send_raw: zfs send using compressed data from disk
+* replicate_send_raw: zfs send using raw data from disk
+* replicate2_send_raw: zfs send using raw data from disk
 * replicate_send_properties: zfs send sends all properties of dataset
 * replicate2_send_properties: zfs send sends all properties of dataset
 * replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
