@@ -1,3 +1,13 @@
+zsnapd (0.8.9e-1~1.gbp0e208c) unstable; urgency=medium
+
+  ** SNAPSHOT build @0e208c8213797934c8de18863c3f45f534b4ce69 **
+
+  * Add send raw -w flag to support encryption
+  * Update zsnapd-trigger help message
+  * Add failed transfer save points 1
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 08 Jan 2020 21:05:15 +1300
+
 zsnapd (0.8.9d-2) unstable; urgency=medium
 
   * Correct distribution entries to unstable only.
