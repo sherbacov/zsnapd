@@ -122,7 +122,7 @@ class ZFS(object):
         if send_properties:
             send_args += 'p'
         if send_raw:
-            send_args += 'r'
+            send_args += 'w'
         if full_clone:
             send_args += 'R'
         if send_args:
@@ -195,7 +195,8 @@ class ZFS(object):
 
     @staticmethod
     def get_size(dataset, base_snapshot, last_snapshot, endpoint='', buffer_size=DEFAULT_BUFFER_SIZE,
-            compression=None, full_clone=False, all_snapshots=True, send_compression=False,
+            compression=None, full_clone=False, all_snapshots=True, 
+            receive_no_mountpoint=False, receive_save=False, send_compression=False,
             send_properties=False, send_raw=False, log_command=False):
         """
         Executes a dry-run zfs send to calculate the size of the delta.
@@ -213,7 +214,7 @@ class ZFS(object):
         if send_properties:
             send_args += 'p'
         if send_raw:
-            send_args += 'r'
+            send_args += 'w'
         if full_clone:
             send_args += 'R'
         if send_args:
