@@ -182,7 +182,8 @@ class Manager(object):
         result = PROC_EXECUTED
         holds = ZFS.holds(dataset, endpoint=endpoint, log_command=log_command)
         ZFS.hold(dataset, snapshot, endpoint=endpoint, log_command=log_command, may_exist=True)
-        holds.remove(snapshot)
+        if snapshot in holds:
+            holds.remove(snapshot)
         for hold in holds:
             ZFS.release(dataset, hold, endpoint=endpoint, log_command=log_command)
         result = PROC_CHANGED
