@@ -118,9 +118,9 @@ class ZFS(object):
         Retreives a resume token
         """
         if endpoint == '':
-            command = 'zfs get receive_resume_token -pHo value {0}'.format(dataset)
+            command = 'zfs get receive_resume_token -pHo value {0} || true'.format(dataset)
         else:
-            command = "{0} 'zfs get receive_resume_token -pHo value {1}'".format(endpoint, dataset)
+            command = "{0} 'zfs get receive_resume_token -pHo value {1} || true'".format(endpoint, dataset)
         output = Helper.run_command(command, '/', log_command=log_command)
         receive_resume_token = ''
         for line in filter(len, output.split('\n')):
@@ -128,9 +128,9 @@ class ZFS(object):
         return receive_resume_token if receive_resume_token != '-' else ''
 
     @staticmethod
-    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', buffer_size=DEFAULT_BUFFER_SIZE, compression=None,
-            full_clone=False, all_snapshots=True, send_compression=False, send_properties=False, send_raw=False, receive_no_mountpoint=False,
-            receive_save=False, log_command=False):
+    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', receive_resume_token='', direction='push',
+            buffer_size=DEFAULT_BUFFER_SIZE, compression=None, full_clone=False, all_snapshots=True, send_compression=False,
+            send_properties=False, send_raw=False, receive_no_mountpoint=False, receive_save=False, log_command=False):
         """
         Replicates a dataset towards a given endpoint/target (push)
         Replicates a dataset from a given endpoint to a local target (pull)
@@ -176,9 +176,8 @@ class ZFS(object):
             # Log these commands if verbose debug
             log_command = True
 
-        # Get receive resume token and work out zfs send command
-        receive_resume_token = ZFS.get_receive_resume_token(dataset, endpoint=endpoint, log_command=log_command)
-        if not receive_resume_token:
+        # Work out zfs send command
+        if receive_resume_token:
             zfs_send_cmd = 'zfs send {0}-t ' + receive_resume_token
         else:
             zfs_send_cmd = 'zfs send {0}{1}{2}@{3}'
@@ -199,6 +198,23 @@ class ZFS(object):
                 command = '{5} \'' + zfs_send_cmd + ' {4} | mbuffer -q -v 0 -s 128k -m {6}\' | mbuffer -q -v 0 -s 128k -m {6} {7} | zfs receive {8}-F {9}'
                 command = command.format(send_args, delta, dataset, last_snapshot, compress, endpoint, buffer_size, decompress, receive_args, target)
                 Helper.run_command(command, '/', log_command=log_command)
+
+    @staticmethod
+    def holds(target, endpoint='', log_command=False):
+        command = 'zfs list -H -r -d 1 -t snapshot -o name {1} | xargs -d "\n" zfs holds -H'
+        if endpoint != '':
+            command = '{0} \'' + command + '\''
+        command = command.format(endpoint, target)
+        output = Helper.run_command(command, '/', log_command=log_command)
+        holds = []
+        for line in filter(len, output.split('\n')):
+            parts = list(filter(len, line.split('\t')))
+            if parts[1] != 'zsm':
+                continue
+            snapshotname = parts[0].split('@')[1]
+            holds.append(snapshotname)
+        holds.sort()
+        return holds
 
     @staticmethod
     def is_held(target, snapshot, endpoint='', log_command=False):

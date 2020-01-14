@@ -178,6 +178,17 @@ class Manager(object):
         return result
 
     @staticmethod
+    def new_hold(dataset, snapshot, endpoint='', log_command=False):
+        result = PROC_EXECUTED
+        holds = ZFS.holds(dataset, endpoint=endpoint, log_command=log_command)
+        ZFS.hold(dataset, snapshot, endpoint=endpoint, log_command=log_command, may_exist=True)
+        holds.remove(snapshot)
+        for hold in holds:
+            ZFS.release(dataset, hold, endpoint=endpoint, log_command=log_command)
+        result = PROC_CHANGED
+        return result
+
+    @staticmethod
     def replicate(src_dataset, src_snapshots, dst_dataset, dst_snapshots, replicate_settings):
         result = PROC_EXECUTED
         push = replicate_settings['target'] is not None
@@ -224,10 +235,8 @@ class Manager(object):
                 log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                 ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                         direction=replicate_dirN, **extra_args)
-                ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command, may_exist=True)
-                ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
-                ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint, log_command=log_command)
-                ZFS.release(dst_dataset, prevsnap_name, endpoint=dst_endpoint, log_command=log_command)
+                Manager.new_hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
+                Manager.new_hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
                 for snapshot in snaps_to_send:
                     dst_snapshots.update({snapshot:src_snapshots[snapshot]})
                 result = PROC_CHANGED
@@ -240,10 +249,8 @@ class Manager(object):
                     log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                     ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                             direction=replicate_dirN, **extra_args)
-                    ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command, may_exist=True)
-                    ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
-                    ZFS.release(src_dataset, prevsnap_name, endpoint=src_endpoint, log_command=log_command)
-                    ZFS.release(dst_dataset, prevsnap_name, endpoint=dst_endpoint, log_command=log_command)
+                    Manager.new_hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
+                    Manager.new_hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
                     previous_snapshot = snapshot
                     dst_snapshots.update({snapshot:src_snapshots[snapshot]})
                     result = PROC_CHANGED
@@ -255,7 +262,7 @@ class Manager(object):
             log_info('  {0}@         > {0}@{1} ({2})'.format(src_dataset, snap_name, size))
             ZFS.replicate(src_dataset, None, snap_name, dst_dataset, replicate_settings['endpoint'],
                     direction=replicate_dirN, **extra_args)
-            ZFS.hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command, may_exist=True)
+            Manager.new_hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
             ZFS.hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
             if full_clone:
                 for snapshot in src_snapshots:
