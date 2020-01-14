@@ -1,3 +1,10 @@
+zsnapd (0.8.9e-1~1.gbp0e208d) unstable; urgency=medium
+
+  * Merge v0.8.9f test release.
+  * Interrupted zfs send/recv support - resume commands
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Tue, 14 Jan 2020 23:11:46 +1300
+
 zsnapd (0.8.9e-1~1.gbp0e208c) unstable; urgency=medium
 
   ** SNAPSHOT build @0e208c8213797934c8de18863c3f45f534b4ce69 **
