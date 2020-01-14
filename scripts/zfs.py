@@ -118,9 +118,9 @@ class ZFS(object):
         Retreives a resume token
         """
         if endpoint == '':
-            command = 'zfs get receive_resume_token -pHo value {0}'.format(dataset)
+            command = 'zfs get receive_resume_token -pHo value {0} || true'.format(dataset)
         else:
-            command = "{0} 'zfs get receive_resume_token -pHo value {1}'".format(endpoint, dataset)
+            command = "{0} 'zfs get receive_resume_token -pHo value {1} || true'".format(endpoint, dataset)
         output = Helper.run_command(command, '/', log_command=log_command)
         receive_resume_token = ''
         for line in filter(len, output.split('\n')):
@@ -178,7 +178,7 @@ class ZFS(object):
 
         # Get receive resume token and work out zfs send command
         receive_resume_token = ZFS.get_receive_resume_token(dataset, endpoint=endpoint, log_command=log_command)
-        if not receive_resume_token:
+        if receive_resume_token:
             zfs_send_cmd = 'zfs send {0}-t ' + receive_resume_token
         else:
             zfs_send_cmd = 'zfs send {0}{1}{2}@{3}'
