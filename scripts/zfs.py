@@ -145,7 +145,7 @@ class ZFS(object):
 
         send_args = ''
         if send_compression:
-            send_args += 'ce'
+            send_args += 'Lec'
         if send_properties:
             send_args += 'p'
         if send_raw:
@@ -176,20 +176,27 @@ class ZFS(object):
             # Log these commands if verbose debug
             log_command = True
 
+        # Get receive resume token and work out zfs send command
+        receive_resume_token = get_receive_resume_token(dataset, endpoint=endpoint, log_command=log_command)
+        if not receive_resume_token:
+            zfs_send_cmd = 'zfs send {0}-t ' + receive_resume_token
+        else:
+            zfs_send_cmd = 'zfs send {0}{1}{2}@{3}'
+
         if endpoint == '':
             # We're replicating to a local target
-            command = 'zfs send {0}{1}{2}@{3} | zfs receive {4}-F {5}'
+            command = zfs_send_cmd + ' | zfs receive {4}-F {5}'
             command = command.format(send_args, delta, dataset, last_snapshot, receive_args, target)
             Helper.run_command(command, '/', log_command=log_command)
         else:
             if direction == 'push':
                 # We're replicating to a remote server
-                command = 'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {5} | {6} \'mbuffer -q -v 0 -s 128k -m {5} {7} | zfs receive {8}-F {9}\''
+                command = zfs_send_cmd + ' {4} | mbuffer -q -v 0 -s 128k -m {5} | {6} \'mbuffer -q -v 0 -s 128k -m {5} {7} | zfs receive {8}-F {9}\''
                 command = command.format(send_args, delta, dataset, last_snapshot, compress, buffer_size, endpoint, decompress, receive_args, target)
                 Helper.run_command(command, '/', log_command=log_command)
             elif direction == 'pull':
                 # We're pulling from a remote server
-                command = '{5} \'zfs send {0}{1}{2}@{3} {4} | mbuffer -q -v 0 -s 128k -m {6}\' | mbuffer -q -v 0 -s 128k -m {6} {7} | zfs receive {8}-F {9}'
+                command = '{5} \'' + zfs_send_cmd + ' {4} | mbuffer -q -v 0 -s 128k -m {6}\' | mbuffer -q -v 0 -s 128k -m {6} {7} | zfs receive {8}-F {9}'
                 command = command.format(send_args, delta, dataset, last_snapshot, compress, endpoint, buffer_size, decompress, receive_args, target)
                 Helper.run_command(command, '/', log_command=log_command)
 
