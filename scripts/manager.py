@@ -382,11 +382,11 @@ class Manager(object):
                     
                     remote_dataset = replicate_settings['target'] if push else replicate_settings['source']
                     remote_datasets = ZFS.get_datasets(replicate_settings['endpoint'], log_command=log_command)
-                    remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
-                            all_snapshots=dataset_settings['all_snapshots'])
                     if remote_dataset not in remote_datasets:
                         log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
                         continue
+                    remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
+                            all_snapshots=dataset_settings['all_snapshots'])
                     remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                     endpoint = replicate_settings['endpoint']
                     if (take_snapshot is True and this_time not in remote_snapshots):

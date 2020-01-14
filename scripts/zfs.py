@@ -101,6 +101,33 @@ class ZFS(object):
         Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
+    def abort_interrupted_receive(dataset, endpoint='', log_command=False, no_save=False):
+        """
+        Abort an interrupted receive
+        """
+        filter_error = 'does not have any resumable receive state to abort' if no_save else ''
+        if endpoint == '':
+            command = 'zfs receive -A {0}'.format(dataset)
+        else:
+            command = "{0} 'zfs receive -A {1}'".format(endpoint, dataset)
+        Helper.run_command(command, '/', log_command=log_command, filter_error=filter_error)
+
+    @staticmethod
+    def get_receive_resume_token(dataset, endpoint='', log_command=False):
+        """
+        Retreives a resume token
+        """
+        if endpoint == '':
+            command = 'zfs get receive_resume_token -pHo value {0}'.format(dataset)
+        else:
+            command = "{0} 'zfs get receive_resume_token -pHo value {1}'".format(endpoint, dataset)
+        output = Helper.run_command(command, '/', log_command=log_command)
+        receive_resume_token = ''
+        for line in filter(len, output.split('\n')):
+            receive_resume_token = line
+        return receive_resume_token if receive_resume_token != '-' else ''
+
+    @staticmethod
     def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', buffer_size=DEFAULT_BUFFER_SIZE, compression=None,
             full_clone=False, all_snapshots=True, send_compression=False, send_properties=False, send_raw=False, receive_no_mountpoint=False,
             receive_save=False, log_command=False):
@@ -133,8 +160,8 @@ class ZFS(object):
         if receive_save:
             receive_args = 's'
         if receive_args:
-            recieve_args = '-' + recieve_args
-            recieve_args += ' '
+            receive_args = '-' + receive_args
+            receive_args += ' '
         if receive_no_mountpoint:
             receive_args += '-x mountpoint '
 

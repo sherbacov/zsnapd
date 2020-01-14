@@ -91,6 +91,8 @@ class ZsnapdRCmdProcess(Process):
                 'rcmd_zfs_release': settings['rcmd_zfs_release'],
                 'rcmd_zfs_get_size': settings['rcmd_zfs_get_size'],
                 'rcmd_zfs_destroy': settings['rcmd_zfs_destroy'],
+                'rcmd_zfs_recieve_abort': settings['rcmd_zfs_receive_abort'],
+                'rcmd_zfs_get_receive_resume_token': settings['rcmd_zfs_get_receive_resume_token'],
                 'rcmd_preexec': settings['rcmd_preexec'],
                 'rcmd_postexec': settings['rcmd_postexec'],
                 'rcmd_replicate_postexec': settings['rcmd_replicate_postexec'],
