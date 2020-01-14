@@ -200,6 +200,23 @@ class ZFS(object):
                 Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
+    def holds(target, endpoint='', log_command=False):
+        command = 'zfs list -H -r -d 1 -t snapshot -o name {1} | xargs -d "\n" zfs holds -H'
+        if endpoint != '':
+            command = '{0} \'' + command + '\''
+        command = command.format(endpoint, target)
+        output = Helper.run_command(command, '/', log_command=log_command)
+        holds = []
+        for line in filter(len, output.split('\n')):
+            parts = list(filter(len, line.split('\t')))
+            if parts[1] != 'zsm':
+                continue
+            snapshotname = parts[0].split('@')[1]
+            holds.append(snapshotname)
+        holds.sort()
+        return holds
+
+    @staticmethod
     def is_held(target, snapshot, endpoint='', log_command=False):
         if endpoint == '':
             command = 'zfs holds {0}@{1}'.format(target, snapshot)
