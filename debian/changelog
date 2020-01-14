@@ -1,3 +1,9 @@
+zsnapd (0.8.9i-1~1.gbp0e208f) unstable; urgency=medium
+
+  * Bug fix for ValueError in Manager.new_hold()
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 15 Jan 2020 11:28:05 +1300
+
 zsnapd (0.8.9h-1~1.gbp0e208e) unstable; urgency=medium
 
   * WIP - resume token usage
