@@ -1,3 +1,9 @@
+zsnapd (0.8.9j-1~1.gbp0e208g) unstable; urgency=medium
+
+  * Zsnapd rcmd rcmd_zfs_holds bug fixes
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 15 Jan 2020 12:02:35 +1300
+
 zsnapd (0.8.9i-1~1.gbp0e208f) unstable; urgency=medium
 
   * Bug fix for ValueError in Manager.new_hold()
