@@ -177,7 +177,7 @@ class ZFS(object):
             log_command = True
 
         # Get receive resume token and work out zfs send command
-        receive_resume_token = get_receive_resume_token(dataset, endpoint=endpoint, log_command=log_command)
+        receive_resume_token = ZFS.get_receive_resume_token(dataset, endpoint=endpoint, log_command=log_command)
         if not receive_resume_token:
             zfs_send_cmd = 'zfs send {0}-t ' + receive_resume_token
         else:
