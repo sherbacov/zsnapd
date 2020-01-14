@@ -1,4 +1,4 @@
-zsnapd (0.8.9e-1~1.gbp0e208d) unstable; urgency=medium
+zsnapd (0.8.9f-1~1.gbp0e208d) unstable; urgency=medium
 
   * Merge v0.8.9f test release.
   * Interrupted zfs send/recv support - resume commands
