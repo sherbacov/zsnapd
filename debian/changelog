@@ -1,3 +1,10 @@
+zsnapd (0.8.9h-1~1.gbp0e208e) unstable; urgency=medium
+
+  * WIP - resume token usage
+  * WIP - New hold managment commands
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 15 Jan 2020 11:24:16 +1300
+
 zsnapd (0.8.9f-1~1.gbp0e208d) unstable; urgency=medium
 
   * Merge v0.8.9f test release.
