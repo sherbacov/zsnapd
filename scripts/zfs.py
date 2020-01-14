@@ -128,9 +128,9 @@ class ZFS(object):
         return receive_resume_token if receive_resume_token != '-' else ''
 
     @staticmethod
-    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', direction='push', buffer_size=DEFAULT_BUFFER_SIZE, compression=None,
-            full_clone=False, all_snapshots=True, send_compression=False, send_properties=False, send_raw=False, receive_no_mountpoint=False,
-            receive_save=False, log_command=False):
+    def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', receive_resume_token='', direction='push',
+            buffer_size=DEFAULT_BUFFER_SIZE, compression=None, full_clone=False, all_snapshots=True, send_compression=False,
+            send_properties=False, send_raw=False, receive_no_mountpoint=False, receive_save=False, log_command=False):
         """
         Replicates a dataset towards a given endpoint/target (push)
         Replicates a dataset from a given endpoint to a local target (pull)
@@ -176,8 +176,7 @@ class ZFS(object):
             # Log these commands if verbose debug
             log_command = True
 
-        # Get receive resume token and work out zfs send command
-        receive_resume_token = ZFS.get_receive_resume_token(dataset, endpoint=endpoint, log_command=log_command)
+        # Work out zfs send command
         if receive_resume_token:
             zfs_send_cmd = 'zfs send {0}-t ' + receive_resume_token
         else:
