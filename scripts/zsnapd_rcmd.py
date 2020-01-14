@@ -87,6 +87,7 @@ class ZsnapdRCmdProcess(Process):
                 'rcmd_zfs_replicate_push': settings['rcmd_zfs_replicate_push'],
                 'rcmd_zfs_replicate_pull': settings['rcmd_zfs_replicate_pull'],
                 'rcmd_zfs_replicate_pull2': settings['rcmd_zfs_replicate_pull2'],
+                'rcmd_zfs_holds': settings['rcmd_zfs_holds'],
                 'rcmd_zfs_is_held': settings['rcmd_zfs_is_held'],
                 'rcmd_zfs_hold': settings['rcmd_zfs_hold'],
                 'rcmd_zfs_release': settings['rcmd_zfs_release'],
