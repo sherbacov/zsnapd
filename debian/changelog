@@ -1,10 +1,10 @@
-zsnapd (0.8.9l-1~1.gbp0e208h) unstable; urgency=medium
+zsnapd (0.8.9m-1~1.gbp0e208h) unstable; urgency=medium
 
   * Resume zfs send/receive implemented. v1.
   * Finish updating log messages
   * Implement get_snapshots2, more efficient and clear
 
- -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 15 Jan 2020 21:13:01 +1300
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 15 Jan 2020 21:53:14 +1300
 
 zsnapd (0.8.9j-1~1.gbp0e208g) unstable; urgency=medium
 
