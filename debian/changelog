@@ -1,3 +1,9 @@
+zsnapd (0.8.9o-1~1.gbp0e208j) unstable; urgency=medium
+
+  * Fix rcmd_zfs_holds regex to actually work
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 15 Jan 2020 22:12:29 +1300
+
 zsnapd (0.8.9n-1~1.gbp0e208i) unstable; urgency=medium
 
   * Correct bug in zsnapd-rcmd misnamed config item
