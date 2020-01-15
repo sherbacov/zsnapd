@@ -74,6 +74,27 @@ class ZFS(object):
         return snapshots
 
     @staticmethod
+    def get_snapshots2(dataset, endpoint='', all_snapshots=True, log_command=False):
+        """
+        Retreives a list of snapshots from a dataset
+        """
+        command = 'zfs list -pH -s creation -o name,creation -t snapshot {1} || true'
+        if endpoint:
+            command = '{0} \'' + command + '\''
+        output = Helper.run_command(command.format(endpoint, dataset), '/', log_command=log_command)
+        snapshots = OrderedDict()
+        for line in filter(len, output.split('\n')):
+            parts = list(filter(len, line.split('\t')))
+            creation = int(parts[1])
+            snapshot = time.strftime(SNAPSHOTNAME_FMTSPEC, time.localtime(creation))
+            snapshotname = parts[0].split('@')[1]
+            if (not all_snapshots and re.match(SNAPSHOTNAME_REGEX, snapshotname) is None):
+                # If required, only read in zsnapd snapshots
+                continue
+            snapshots[snapshot] = {'name': snapshotname, 'creation': creation}
+        return snapshots
+
+    @staticmethod
     def get_datasets(endpoint='', log_command=False):
         """
         Retreives all datasets

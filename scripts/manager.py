@@ -231,9 +231,8 @@ class Manager(object):
                 dst_endpoint = replicate_settings['endpoint']
             else:
                 dst_endpoint = ''
-            new_dst_snapshots = ZFS.get_snapshots(dst_dataset, dst_endpoint, log_command=log_command,
+            new_dst_snapshots = ZFS.get_snapshots2(dst_dataset, dst_endpoint, log_command=log_command,
                     all_snapshots=all_snapshots)
-            new_dst_snapshots = new_dst_snapshots.get(dst_dataset, OrderedDict())
             snapshot = list(new_dst_snapshots)[-1]
             snap_name = new_dst_snapshots[snapshot]['name']
             Manager.new_hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
@@ -381,9 +380,8 @@ class Manager(object):
                             continue
 
                         remote_dataset = replicate_settings['target']
-                        remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
+                        remote_snapshots = ZFS.get_snapshots2(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
                                 all_snapshots=dataset_settings['all_snapshots'])
-                        remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                         result = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate_settings)
                         # Clean snapshots remotely if one has been taken - only kept snapshots will allow aging
                         if (dataset_settings['remote_schema']):
@@ -398,9 +396,8 @@ class Manager(object):
                             continue
 
                         remote_dataset = replicate2_settings['target']
-                        remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate2_settings['endpoint'], log_command=log_command,
+                        remote_snapshots = ZFS.get_snapshots2(remote_dataset, replicate2_settings['endpoint'], log_command=log_command,
                                 all_snapshots=dataset_settings['all_snapshots'])
-                        remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                         result2 = Manager.replicate(dataset, local_snapshots, remote_dataset, remote_snapshots, replicate2_settings)
                         # Clean snapshots remotely if one has been taken - only kept snapshots will allow aging
                         if (dataset_settings['remote2_schema']):
@@ -424,9 +421,8 @@ class Manager(object):
                     if remote_dataset not in remote_datasets:
                         log_error("[{0}] - remote dataset '{1}' does not exist".format(dataset, remote_dataset))
                         continue
-                    remote_snapshots = ZFS.get_snapshots(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
+                    remote_snapshots = ZFS.get_snapshots2(remote_dataset, replicate_settings['endpoint'], log_command=log_command,
                             all_snapshots=dataset_settings['all_snapshots'])
-                    remote_snapshots = remote_snapshots.get(remote_dataset, OrderedDict())
                     endpoint = replicate_settings['endpoint']
                     if (take_snapshot is True and this_time not in remote_snapshots):
                         # Only execute everything here if needed
