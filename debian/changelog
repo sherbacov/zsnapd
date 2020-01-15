@@ -1,3 +1,10 @@
+zsnapd (0.8.9n-1~1.gbp0e208i) unstable; urgency=medium
+
+  * Correct bug in zsnapd-rcmd misnamed config item
+  * Fix missing line in zsnapd-rcmd globals
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Wed, 15 Jan 2020 22:01:31 +1300
+
 zsnapd (0.8.9m-1~1.gbp0e208h) unstable; urgency=medium
 
   * Resume zfs send/receive implemented. v1.
