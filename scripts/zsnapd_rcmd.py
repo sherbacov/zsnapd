@@ -83,6 +83,7 @@ class ZsnapdRCmdProcess(Process):
         allowed_cmd_regex_dict = {
                 'rcmd_zfs_get_snapshots': settings['rcmd_zfs_get_snapshots'],
                 'rcmd_zfs_get_datasets': settings['rcmd_zfs_get_datasets'],
+                'rcmd_zfs_get_datasets2': settings['rcmd_zfs_get_datasets2'],
                 'rcmd_zfs_snapshot': settings['rcmd_zfs_snapshot'],
                 'rcmd_zfs_replicate_push': settings['rcmd_zfs_replicate_push'],
                 'rcmd_zfs_replicate_pull': settings['rcmd_zfs_replicate_pull'],
@@ -92,6 +93,7 @@ class ZsnapdRCmdProcess(Process):
                 'rcmd_zfs_hold': settings['rcmd_zfs_hold'],
                 'rcmd_zfs_release': settings['rcmd_zfs_release'],
                 'rcmd_zfs_get_size': settings['rcmd_zfs_get_size'],
+                'rcmd_zfs_get_size2': settings['rcmd_zfs_get_size2'],
                 'rcmd_zfs_destroy': settings['rcmd_zfs_destroy'],
                 'rcmd_zfs_recieve_abort': settings['rcmd_zfs_receive_abort'],
                 'rcmd_zfs_get_receive_resume_token': settings['rcmd_zfs_get_receive_resume_token'],
