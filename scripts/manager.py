@@ -214,6 +214,36 @@ class Manager(object):
                 'send_compression': send_compression, 'send_properties': send_properties,
                 'buffer_size': buffer_size, 'compression': compression, 'send_raw': send_raw,
                 'log_command': log_command }
+        # Get any receive_resume_tokens
+        receive_resume_token = ''
+        if push:
+            receive_resume_token = ZFS.get_receive_resume_token(dst_dataset, endpoint=dst_endpoint, log_command=log_command)
+        else:
+            receive_resume_token = ZFS.get_receive_resume_token(src_dataset, endpoint=src_endpoint, log_command=log_command)
+        if receive_resume_token:
+            log_info('[{0}] - Resuming replicating [{1}]:{2} to [{3}]:{4}'.format(local_dataset, src_host, src_dataset, dst_host, dst_dataset))
+            size = ZFS.get_size(src_dataset, None, None, src_endpoint, receive_resume_token, **extra_args)
+            log_info('[{0}] -   {1}@??? > {2}@??? ({3})'.format(local_dataset, src_dataset, dst_dataset, size))
+            ZFS.replicate(src_dataset, None, None, dst_dataset, replicate_settings['endpoint'],
+                    receive_resume_token, direction=replicate_dirN, **extra_args)
+            # Recalculate dst data sets
+            if push:
+                dst_endpoint = replicate_settings['endpoint']
+            else:
+                dst_endpoint = ''
+            new_dst_snapshots = ZFS.get_snapshots(dst_dataset, dst_endpoint, log_command=log_command,
+                    all_snapshots=all_snapshots)
+            new_dst_snapshots = new_dst_snapshots.get(dst_dataset, OrderedDict())
+            snapshot = list(new_dst_snapshots)[-1]
+            snap_name = new_dst_snapshots[snapshot]['name']
+            Manager.new_hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
+            Manager.new_hold(dst_dataset, snap_name, endpoint=dst_endpoint, log_command=log_command)
+            dst_snapshots.clear()
+            dst_snapshots.update(new_dst_snapshots)
+            log_info('[{0}] - Resumed replicatiion [{1}]:{2} to [{3}]:{4} complete'.format(local_dataset, src_host, src_dataset, dst_host, dst_dataset))
+            result= PROC_CHANGED
+            return result
+
         log_info('[{0}] - Replicating [{1}]:{2} to [{3}]:{4}'.format(local_dataset, src_host, src_dataset, dst_host, dst_dataset))
         last_common_snapshot = None
         index_last_common_snapshot = None

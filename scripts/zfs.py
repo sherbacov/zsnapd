@@ -146,12 +146,13 @@ class ZFS(object):
         send_args = ''
         if send_compression:
             send_args += 'Lec'
-        if send_properties:
-            send_args += 'p'
         if send_raw:
             send_args += 'w'
-        if full_clone:
-            send_args += 'R'
+        if not receive_resume_token:
+            if send_properties:
+                send_args += 'p'
+            if full_clone:
+                send_args += 'R'
         if send_args:
             send_args = '-' + send_args
             send_args += ' '
@@ -244,8 +245,8 @@ class ZFS(object):
             Helper.run_command(command, '/', log_command=log_command)
 
     @staticmethod
-    def get_size(dataset, base_snapshot, last_snapshot, endpoint='', buffer_size=DEFAULT_BUFFER_SIZE,
-            compression=None, full_clone=False, all_snapshots=True, 
+    def get_size(dataset, base_snapshot, last_snapshot, endpoint='', receive_resume_token='',
+            buffer_size=DEFAULT_BUFFER_SIZE, compression=None, full_clone=False, all_snapshots=True,
             receive_no_mountpoint=False, receive_save=False, send_compression=False,
             send_properties=False, send_raw=False, log_command=False):
         """
@@ -260,24 +261,30 @@ class ZFS(object):
 
         send_args = ''
         if send_compression:
-            send_args += 'ce'
-        if send_properties:
-            send_args += 'p'
+            send_args += 'Lec'
         if send_raw:
             send_args += 'w'
-        if full_clone:
-            send_args += 'R'
+        if not receive_resume_token:
+            if send_properties:
+                send_args += 'p'
+            if full_clone:
+                send_args += 'R'
         if send_args:
             send_args = '-' + send_args
             send_args += ' '
 
-        if endpoint == '':
-            command = 'zfs send -nv {0}{1}{2}@{3}'
-            command = command.format(send_args, delta, dataset, last_snapshot)
+        # Work out zfs send command
+        if receive_resume_token:
+            zfs_send_cmd = 'zfs send -nv {0}-t ' + receive_resume_token
         else:
-            command = '{0} \'zfs send -nv {1}{2}{3}@{4}\''
-            command = command.format(endpoint, send_args, delta, dataset, last_snapshot)
-        command = '{0} 2>&1 | grep \'total estimated size is\''.format(command)
+            zfs_send_cmd = 'zfs send -nv {0}{1}{2}@{3}'
+
+        if endpoint == '':
+            command = zfs_send_cmd
+        else:
+            command = '{5} \'' + zfs_send_cmd + '\''
+        command = command.format(send_args, delta, dataset, last_snapshot, endpoint)
+        command = '{0} 2>&1 | grep \'estimated size is\''.format(command)
         output = Helper.run_command(command, '/', log_command=log_command)
         size = output.strip().split(' ')[-1]
         if size[-1].isdigit():
