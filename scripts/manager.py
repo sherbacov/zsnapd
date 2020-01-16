@@ -223,7 +223,7 @@ class Manager(object):
         if receive_resume_token:
             log_info('[{0}] - Resuming replicating [{1}]:{2} to [{3}]:{4}'.format(local_dataset, src_host, src_dataset, dst_host, dst_dataset))
             size = ZFS.get_size(src_dataset, None, None, src_endpoint, receive_resume_token, **extra_args)
-            log_info('[{0}] -   {1}@??? > {2}@??? ({3})'.format(local_dataset, src_dataset, dst_dataset, size))
+            log_info('[{0}] -   {1}@??? > {1}@??? ({2})'.format(local_dataset, src_dataset, size))
             ZFS.replicate(src_dataset, None, None, dst_dataset, replicate_settings['endpoint'],
                     receive_resume_token, direction=replicate_dirN, **extra_args)
             # Recalculate dst data sets
@@ -262,8 +262,7 @@ class Manager(object):
                 snap_name = src_snapshots[snapshot]['name']
                 # There is a snapshot on this host that is not yet on the other side.
                 size = ZFS.get_size(src_dataset, prevsnap_name, snap_name, endpoint=src_endpoint, **extra_args)
-                log_info('[{0}] -   {1}@{2} > {3}@{4} ({5})'.format(local_dataset, src_dataset, prevsnap_name,
-                    dst_dataset, snap_name, size))
+                log_info('[{0}] -   {1}@{2} > {1}@{3} ({4})'.format(local_dataset, src_dataset, prevsnap_name, snap_name, size))
                 ZFS.replicate(src_dataset, prevsnap_name, snap_name, dst_dataset, replicate_settings['endpoint'],
                         direction=replicate_dirN, **extra_args)
                 Manager.new_hold(src_dataset, snap_name, endpoint=src_endpoint, log_command=log_command)
