@@ -178,12 +178,12 @@ class Manager(object):
         return result
 
     @staticmethod
-    def new_hold(dataset, snapshot, endpoint='', log_command=False):
+    def new_hold(dataset, snap_name, endpoint='', log_command=False):
         result = PROC_EXECUTED
         holds = ZFS.holds(dataset, endpoint=endpoint, log_command=log_command)
-        ZFS.hold(dataset, snapshot, endpoint=endpoint, log_command=log_command, may_exist=True)
-        if snapshot in holds:
-            holds.remove(snapshot)
+        ZFS.hold(dataset, snap_name, endpoint=endpoint, log_command=log_command, may_exist=True)
+        if snap_name in holds:
+            holds.remove(snap_name)
         for hold in holds:
             ZFS.release(dataset, hold, endpoint=endpoint, log_command=log_command)
         result = PROC_CHANGED
