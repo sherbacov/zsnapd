@@ -303,7 +303,7 @@ class ZFS(object):
         if endpoint == '':
             command = zfs_send_cmd
         else:
-            command = '{5} \'' + zfs_send_cmd + '\''
+            command = '{4} \'' + zfs_send_cmd + '\''
         command = command.format(send_args, delta, dataset, last_snapshot, endpoint)
         command = '{0} 2>&1 | grep \'estimated size is\''.format(command)
         output = Helper.run_command(command, '/', log_command=log_command)

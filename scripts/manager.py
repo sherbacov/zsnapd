@@ -331,7 +331,7 @@ class Manager(object):
                 # Decide whether we need to handle this dataset
                 if not take_snapshot and not replicate and not replicate2 and not clean:
                     continue
- 
+
                 replicate_settings = dataset_settings['replicate']
                 replicate2_settings = dataset_settings['replicate2']
                 full_clone = replicate_settings['full_clone'] if replicate else False
@@ -409,7 +409,7 @@ class Manager(object):
                     # Pull logic for remote site
                     # Replicating, if required
                     # If network replicating, check connectivity here
-                    test_unconnected = is_connected.test_unconnected(dataset_settings, local_dataset=dataset)
+                    test_unconnected = is_connected.test_unconnected(replicate_settings, local_dataset=dataset)
                     if test_unconnected:
                         log_warn("[{$0}] - Skipping as '{1}:{2}' unreachable"
                                 .format(dataset, replicate_settings['endpoint_host'], replicate_settings['endpoint_port']))
