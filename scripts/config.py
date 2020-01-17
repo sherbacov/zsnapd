@@ -473,17 +473,20 @@ class Config(object):
                             endpoint = ''
                     else:
                         endpoint = ds_config.get(dataset, 'replicate_endpoint')
+                    full_clone = ds_config.getboolean(dataset, 'replicate_full_clone', fallback=False)
+                    send_properties = ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False)
                     ds_settings[dataset]['replicate'] = {'endpoint': endpoint,
                                                       'target': ds_config.get(dataset, 'replicate_target', fallback=None),
                                                       'source': ds_config.get(dataset, 'replicate_source', fallback=None),
                                                       'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                                             fallback=old_setting_repl_all),
                                                       'compression': ds_config.get(dataset, 'compression', fallback=None),
-                                                      'full_clone': ds_config.getboolean(dataset, 'replicate_full_clone', fallback=False),
+                                                      'full_clone': full_clone,
                                                       'receive_save': ds_config.getboolean(dataset, 'replicate_receive_save', fallback=False),
-                                                      'receive_no_mountpoint': ds_config.getboolean(dataset, 'replicate_receive_no_mountpoint', fallback=False),
+                                                      'receive_no_mountpoint': ds_config.getboolean(dataset, 'replicate_receive_no_mountpoint',
+                                                          fallback=(full_clone or send_properties)),
                                                       'send_compression': ds_config.getboolean(dataset, 'replicate_send_compression', fallback=False),
-                                                      'send_properties': ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False),
+                                                      'send_properties': send_properties,
                                                       'send_raw': ds_config.getboolean(dataset, 'replicate_send_raw', fallback=False),
                                                       'buffer_size': ds_config.get(dataset, 'buffer_size', fallback=DEFAULT_BUFFER_SIZE),
                                                       'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False),
@@ -502,17 +505,20 @@ class Config(object):
                             endpoint = ''
                     else:
                         endpoint = ds_config.get(dataset, 'replicate2_endpoint')
+                    full_clone = ds_config.getboolean(dataset, 'replicate2_full_clone', fallback=False)
+                    send_properties = ds_config.getboolean(dataset, 'replicate2_send_properties', fallback=False)
                     ds_settings[dataset]['replicate2'] = {'endpoint': endpoint,
                                                       'target': ds_config.get(dataset, 'replicate2_target', fallback=None),
                                                       'source': None,
                                                       'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                                             fallback=old_setting_repl_all),
                                                       'compression': ds_config.get(dataset, 'compression2', fallback=None),
-                                                      'full_clone': ds_config.getboolean(dataset, 'replicate2_full_clone', fallback=False),
+                                                      'full_clone': full_clone,
                                                       'receive_save': ds_config.getboolean(dataset, 'replicate2_receive_save', fallback=False),
-                                                      'receive_no_mountpoint': ds_config.getboolean(dataset, 'replicate2_receive_no_mountpoint', fallback=False),
+                                                      'receive_no_mountpoint': ds_config.getboolean(dataset, 'replicate2_receive_no_mountpoint',
+                                                          fallback=(full_clone or send_properties)),
                                                       'send_compression': ds_config.getboolean(dataset, 'replicate2_send_compression', fallback=False),
-                                                      'send_properties': ds_config.getboolean(dataset, 'replicate2_send_properties', fallback=False),
+                                                      'send_properties': send_properties,
                                                       'send_raw': ds_config.getboolean(dataset, 'replicate2_send_raw', fallback=False),
                                                       'buffer_size': ds_config.get(dataset, 'buffer2_size', fallback=DEFAULT_BUFFER_SIZE),
                                                       'log_commands': ds_config.getboolean(dataset, 'log_commands', fallback=False),
