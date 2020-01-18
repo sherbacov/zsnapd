@@ -202,6 +202,7 @@ class Manager(object):
         full_clone = replicate_settings['full_clone']
         receive_save = replicate_settings['receive_save']
         receive_no_mountpoint = replicate_settings['receive_no_mountpoint']
+        receive_umount = replicate_settings['receive_umount']
         send_compression = replicate_settings['send_compression']
         send_properties = replicate_settings['send_properties']
         send_raw = replicate_settings['send_raw']
@@ -210,7 +211,8 @@ class Manager(object):
         compression = replicate_settings['compression']
         log_command = replicate_settings['log_commands']
         extra_args = {'full_clone': full_clone, 'all_snapshots': all_snapshots,
-                'receive_no_mountpoint': receive_no_mountpoint, 'receive_save': receive_save,
+                'receive_no_mountpoint': receive_no_mountpoint, 'receive_umount': receive_umount,
+                'receive_save': receive_save,
                 'send_compression': send_compression, 'send_properties': send_properties,
                 'buffer_size': buffer_size, 'compression': compression, 'send_raw': send_raw,
                 'log_command': log_command }

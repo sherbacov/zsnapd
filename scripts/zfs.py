@@ -151,7 +151,7 @@ class ZFS(object):
     @staticmethod
     def replicate(dataset, base_snapshot, last_snapshot, target, endpoint='', receive_resume_token='', direction='push',
             buffer_size=DEFAULT_BUFFER_SIZE, compression=None, full_clone=False, all_snapshots=True, send_compression=False,
-            send_properties=False, send_raw=False, receive_no_mountpoint=False, receive_save=False, log_command=False):
+            send_properties=False, send_raw=False, receive_no_mountpoint=False, receive_umount=False, receive_save=False, log_command=False):
         """
         Replicates a dataset towards a given endpoint/target (push)
         Replicates a dataset from a given endpoint to a local target (pull)
@@ -181,6 +181,8 @@ class ZFS(object):
         receive_args = ''
         if receive_save:
             receive_args = 's'
+        if receive_umount:
+            receive_args += 'u'
         if receive_args:
             receive_args = '-' + receive_args
             receive_args += ' '
@@ -268,7 +270,7 @@ class ZFS(object):
     @staticmethod
     def get_size(dataset, base_snapshot, last_snapshot, endpoint='', receive_resume_token='',
             buffer_size=DEFAULT_BUFFER_SIZE, compression=None, full_clone=False, all_snapshots=True,
-            receive_no_mountpoint=False, receive_save=False, send_compression=False,
+            receive_no_mountpoint=False, receive_umount=False, receive_save=False, send_compression=False,
             send_properties=False, send_raw=False, log_command=False):
         """
         Executes a dry-run zfs send to calculate the size of the delta.
