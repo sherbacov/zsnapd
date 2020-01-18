@@ -1,3 +1,9 @@
+zsnapd (0.8.10a-1) unstable; urgency=medium
+
+  * Add umount arg support to zfs recv
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Sun, 19 Jan 2020 08:50:46 +1300
+
 zsnapd (0.8.10-1) unstable; urgency=medium
  
   * release 0.8.10
