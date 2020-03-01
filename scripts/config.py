@@ -64,7 +64,8 @@ ds_name_syntax = r'^[-_:.a-zA-Z0-9][-_:./a-zA-Z0-9]*$'
 ds_name_reserved_regex = r'^(log|DEFAULT|(c[0-9]|log/|mirror|raidz|raidz1|raidz2|raidz3|spare).*)$'
 template_name_syntax = r'^[a-zA-Z0-9][-_:.a-zA-Z0-9]*$'
 BOOLEAN_REGEX = r'^([tT]rue|[fF]alse|[oO]n|[oO]ff|0|1)$'
-PATH_REGEX = r'[-_./~a-zA-Z0-9]+'
+PATH_REGEX = r'[-_./ ~a-zA-Z0-9]+'
+MOUNTPOINT_REGEX = r'^(None|legacy|/|/' + PATH_REGEX + r')$'
 SHELLCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|=$"' + r"'" + r']+$'
 SHELLFORMAT_REGEX = r'^[-_./~a-zA-Z0-9 	:@|{}]+$'
 NETCMD_REGEX = r'^[-_./~a-zA-Z0-9 	:@|]*$'
@@ -75,15 +76,18 @@ BUFFER_SIZE_REGEX = r'[0-9]{1,12}[kMG]'
 ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate': BOOLEAN_REGEX,
         'time': None,
-        'mountpoint': r'^(None|/|/' + PATH_REGEX + r')$',
+        'mountpoint': MOUNTPOINT_REGEX,
         'preexec': SHELLCMD_REGEX,
         'postexec': SHELLCMD_REGEX,
         'log_commands': BOOLEAN_REGEX,
         'replicate_all': BOOLEAN_REGEX,
         'all_snapshots': BOOLEAN_REGEX,
+        'replicate_append_basename': BOOLEAN_REGEX,
+        'replicate_append_fullname': BOOLEAN_REGEX,
         'replicate_full_clone': BOOLEAN_REGEX,
         'replicate_receive_save': BOOLEAN_REGEX,
         'replicate_receive_no_mountpoint': BOOLEAN_REGEX,
+        'replicate_receive_mountpoint': MOUNTPOINT_REGEX,
         'replicate_receive_umount': BOOLEAN_REGEX,
         'replicate_send_compression': BOOLEAN_REGEX,
         'replicate_send_properties': BOOLEAN_REGEX,
@@ -95,9 +99,12 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_endpoint_host': HOST_REGEX,
         'replicate_endpoint_port': PORT_REGEX,
         'replicate_endpoint_command': SHELLFORMAT_REGEX,
+        'replicate2_append_fullname': BOOLEAN_REGEX,
+        'replicate2_append_basename': BOOLEAN_REGEX,
         'replicate2_full_clone': BOOLEAN_REGEX,
         'replicate2_receive_save': BOOLEAN_REGEX,
         'replicate2_receive_no_mountpoint': BOOLEAN_REGEX,
+        'replicate2_receive_mountpoint': MOUNTPOINT_REGEX,
         'replicate2_receive_umount': BOOLEAN_REGEX,
         'replicate2_send_compression': BOOLEAN_REGEX,
         'replicate2_send_properties': BOOLEAN_REGEX,
@@ -370,6 +377,25 @@ class Config(object):
             file_.close()
             return config
 
+        def check_ds_config_clash(setting_name1, setting_name2, fallback1=False, fallback2=False):
+            nonlocal invalid_config
+            try:
+                setting1 =  ds_config.get(dataset, setting_name1)
+                setting1_set = True
+            except configparser.NoOptionError:
+                setting1 = fallback1
+                setting1_set = False
+            try:
+                setting2 = ds_config.get(dataset, setting_name2)
+                setting2_set = True
+            except configparser.NoOptionError:
+                setting2 = fallback2
+                setting2_set = False
+            if ((setting1_set and setting1) and (setting2_set and setting2)):
+                log_error("[{0}] - '{1}' and '{2}' can't be set at the same time.".format(dataset, setting_name1, setting_name2))
+                invalid_config = True
+            return (setting1, setting2)
+
         ds_settings = {}
         ds_dict = {}
         template_dict = {}
@@ -477,6 +503,12 @@ class Config(object):
                         endpoint = ds_config.get(dataset, 'replicate_endpoint')
                     full_clone = ds_config.getboolean(dataset, 'replicate_full_clone', fallback=False)
                     send_properties = ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False)
+                    append_basename, append_fullname = check_ds_config_clash('replicate_append_basename', 'replicate_append_fullname')
+                    receive_no_mountpoint, receive_mountpoint = check_ds_config_clash('replicate_receive_no_mountpoint', 'replicate_receive_mountpoint', 
+                                                                        fallback1=(full_clone or send_properties))
+                    if (receive_no_mountpoint and receive_mountpoint):
+                        # Setting a receive_mountpoint overrides a full_clone receive_no_mountpoint
+                        receive_no_mountpoint = False
                     ds_settings[dataset]['replicate'] = {'endpoint': endpoint,
                                                       'target': ds_config.get(dataset, 'replicate_target', fallback=None),
                                                       'source': ds_config.get(dataset, 'replicate_source', fallback=None),
@@ -484,9 +516,11 @@ class Config(object):
                                                             fallback=old_setting_repl_all),
                                                       'compression': ds_config.get(dataset, 'compression', fallback=None),
                                                       'full_clone': full_clone,
+                                                      'append_basename': append_basename,
+                                                      'append_fullname': append_fullname,
                                                       'receive_save': ds_config.getboolean(dataset, 'replicate_receive_save', fallback=False),
-                                                      'receive_no_mountpoint': ds_config.getboolean(dataset, 'replicate_receive_no_mountpoint',
-                                                          fallback=(full_clone or send_properties)),
+                                                      'receive_no_mountpoint': receive_no_mountpoint,
+                                                      'receive_mountpoint': receive_mountpoint,
                                                       'receive_umount': ds_config.getboolean(dataset, 'replicate_receive_umount',
                                                           fallback=(full_clone or send_properties)),
                                                       'send_compression': ds_config.getboolean(dataset, 'replicate_send_compression', fallback=False),
@@ -511,6 +545,12 @@ class Config(object):
                         endpoint = ds_config.get(dataset, 'replicate2_endpoint')
                     full_clone = ds_config.getboolean(dataset, 'replicate2_full_clone', fallback=False)
                     send_properties = ds_config.getboolean(dataset, 'replicate2_send_properties', fallback=False)
+                    append_basename, append_fullname = check_ds_config_clash('replicate2_append_basename', 'replicate2_append_fullname')
+                    receive_no_mountpoint, receive_mountpoint = check_ds_config_clash('replicate2_receive_no_mountpoint', 'replicate2_receive_mountpoint', 
+                                                                        fallback1=(full_clone or send_properties))
+                    if (receive_no_mountpoint and receive_mountpoint):
+                        # Setting a receive_mountpoint overrides a full_clone receive_no_mountpoint
+                        receive_no_mountpoint = False
                     ds_settings[dataset]['replicate2'] = {'endpoint': endpoint,
                                                       'target': ds_config.get(dataset, 'replicate2_target', fallback=None),
                                                       'source': None,
@@ -518,9 +558,11 @@ class Config(object):
                                                             fallback=old_setting_repl_all),
                                                       'compression': ds_config.get(dataset, 'compression2', fallback=None),
                                                       'full_clone': full_clone,
+                                                      'append_basename': ds_config.get(dataset, 'replicate2_append_basename', fallback=False),
+                                                      'append_fullname': ds_config.get(dataset, 'replicate2_append_fullname', fallback=False),
                                                       'receive_save': ds_config.getboolean(dataset, 'replicate2_receive_save', fallback=False),
-                                                      'receive_no_mountpoint': ds_config.getboolean(dataset, 'replicate2_receive_no_mountpoint',
-                                                          fallback=(full_clone or send_properties)),
+                                                      'receive_no_mountpoint': receive_no_mountpoint,
+                                                      'receive_mountpoint': receive_mountpoint,
                                                       'receive_umount': ds_config.getboolean(dataset, 'replicate2_receive_umount',
                                                           fallback=(full_clone or send_properties)),
                                                       'send_compression': ds_config.getboolean(dataset, 'replicate2_send_compression', fallback=False),

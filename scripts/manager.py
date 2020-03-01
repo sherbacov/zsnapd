@@ -200,8 +200,11 @@ class Manager(object):
         dst_host = gethostname().split('.')[0] if not push else replicate_settings['endpoint_host']
         local_dataset = src_dataset if push else dst_dataset
         full_clone = replicate_settings['full_clone']
+        append_fullname = replicate_settings['append_fullname']
+        append_basename = replicate_settings['append_basename']
         receive_save = replicate_settings['receive_save']
         receive_no_mountpoint = replicate_settings['receive_no_mountpoint']
+        receive_mountpoint = replicate_settings['receive_mountpoint']
         receive_umount = replicate_settings['receive_umount']
         send_compression = replicate_settings['send_compression']
         send_properties = replicate_settings['send_properties']
@@ -212,7 +215,8 @@ class Manager(object):
         log_command = replicate_settings['log_commands']
         extra_args = {'full_clone': full_clone, 'all_snapshots': all_snapshots,
                 'receive_no_mountpoint': receive_no_mountpoint, 'receive_umount': receive_umount,
-                'receive_save': receive_save,
+                'receive_save': receive_save, 'append_fullname': append_fullname,
+                'append_basename': append_basename, 'receive_mountpoint': receive_mountpoint,
                 'send_compression': send_compression, 'send_properties': send_properties,
                 'buffer_size': buffer_size, 'compression': compression, 'send_raw': send_raw,
                 'log_command': log_command }
