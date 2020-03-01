@@ -1,3 +1,11 @@
+zsnapd (0.8.11-1~1.gbp63d3b8) unstable; urgency=medium
+
+  ** SNAPSHOT build @63d3b8dcf56d6544b9de9f8303c20f28406138e6 **
+
+  * Append names and receive mountpoint work
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Mon, 02 Mar 2020 09:57:07 +1300
+
 zsnapd (0.8.10b-1) unstable; urgency=medium
 
   * Update documentation for new umount option
