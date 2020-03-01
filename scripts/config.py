@@ -509,15 +509,24 @@ class Config(object):
                     if (receive_no_mountpoint and receive_mountpoint):
                         # Setting a receive_mountpoint overrides a full_clone receive_no_mountpoint
                         receive_no_mountpoint = False
+
+                    append_name = ''
+                    if (append_fullname and dataset.find('/') != -1):
+                        append_name = dataset[dataset.find('/'):]
+                    if (append_basename and dataset.rfind('/') != -1):
+                        append_name = dataset[dataset.rfind('/'):]
+                    receive_mountpoint = str(receive_mountpoint) + append_name
+                    target = ds_config.get(dataset, 'replicate_target', fallback=None)
+                    if target:
+                        target += append_name
+
                     ds_settings[dataset]['replicate'] = {'endpoint': endpoint,
-                                                      'target': ds_config.get(dataset, 'replicate_target', fallback=None),
+                                                      'target': target,
                                                       'source': ds_config.get(dataset, 'replicate_source', fallback=None),
                                                       'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                                             fallback=old_setting_repl_all),
                                                       'compression': ds_config.get(dataset, 'compression', fallback=None),
                                                       'full_clone': full_clone,
-                                                      'append_basename': append_basename,
-                                                      'append_fullname': append_fullname,
                                                       'receive_save': ds_config.getboolean(dataset, 'replicate_receive_save', fallback=False),
                                                       'receive_no_mountpoint': receive_no_mountpoint,
                                                       'receive_mountpoint': receive_mountpoint,
@@ -551,8 +560,19 @@ class Config(object):
                     if (receive_no_mountpoint and receive_mountpoint):
                         # Setting a receive_mountpoint overrides a full_clone receive_no_mountpoint
                         receive_no_mountpoint = False
+
+                    append_name = ''
+                    if (append_fullname and dataset.find('/') != -1):
+                        append_name = dataset[dataset.find('/'):]
+                    if (append_basename and dataset.rfind('/') != -1):
+                        append_name = dataset[dataset.rfind('/'):]
+                    receive_mountpoint = str(receive_mountpoint) + append_name
+                    target = ds_config.get(dataset, 'replicate2_target', fallback=None)
+                    if target:
+                        target += append_name
+
                     ds_settings[dataset]['replicate2'] = {'endpoint': endpoint,
-                                                      'target': ds_config.get(dataset, 'replicate2_target', fallback=None),
+                                                      'target': target,
                                                       'source': None,
                                                       'all_snapshots': ds_config.getboolean(dataset, 'all_snapshots',
                                                             fallback=old_setting_repl_all),
