@@ -108,11 +108,6 @@ class Manager(object):
         ds_candidates = [ds.rstrip('/') for ds in args if ds[0] != '/']
         mnt_candidates = [m.rstrip('/') for m in args if m[0] == '/']
         do_trigger_candidates = [ds for ds in ds_settings if ds_settings[ds]['do_trigger']]
-        if (do_trigger and do_trigger_candidates):
-            ds_candidates += do_trigger_candidates
-        if (not len(ds_candidates) and not len(mnt_candidates)):
-            log_error("No triggers configured or specified.")
-            sys.exit(os.EX_NOINPUT)
         trigger_mnts_dict = {ds_settings[ds]['mountpoint']:ds for ds in ds_settings if ds_settings[ds]['time'].is_trigger()}
         if len(ds_candidates):
             for candidate in ds_candidates:
@@ -131,6 +126,18 @@ class Manager(object):
                     log_error("Dataset '{0}' for trigger mount {1} does not exist.".format(candidate, trigger_mnts_dict[candidate]))
                     sys.exit(os.EX_DATAERR)
                 ds_candidates.append(trigger_mnts_dict[candidate])
+        # If no candidates given on comman line, process all those with do_trigger set
+        if (do_trigger and not ds_candidates):
+            ds_candidates = do_trigger_candidates
+        # If do_trigger, only process those datasets with do_trigger set
+        elif (do_trigger and ds_candidates):
+            for ds in ds_candidates:
+                if (settings['verbose'] and not ds_settings[ds]['do_trigger']):
+                    log_info("Dataset '{0}' 'do_trigger' not set - skipping.".format(ds))
+            ds_candidates = [ ds for ds in ds_candidates if ds_settings[ds]['do_trigger']]
+        if (not len(ds_candidates)):
+            log_error("No datasets configured for triggers or given on command line.")
+            sys.exit(os.EX_NOINPUT)
         # Check ds_candidates for is_trigger and mnt point
         for ds in ds_candidates:
             if (not ds_settings[ds]['time'].is_trigger() and settings['verbose']):
