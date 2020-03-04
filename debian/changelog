@@ -1,3 +1,9 @@
+zsnapd (0.8.11b-1) unstable; urgency=medium
+
+  * Better zsnapd-trigger messages, do_trigger flag
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 05 Mar 2020 09:44:34 +1300
+
 zsnapd (0.8.11a-1) unstable; urgency=medium
 
   * Append names and receive mountpoint work
