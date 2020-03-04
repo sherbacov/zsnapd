@@ -43,7 +43,7 @@ COMMAND_DESCRIPTION = "ZFS Snap Daemon trigger utility"
 
 class ReachableCmdLineArg(BooleanCmdLineArg):
     """
-    Process force command Line setting
+    Process reachable endpoint flag
     """
     def __init__(self):
         BooleanCmdLineArg.__init__(self,
@@ -51,6 +51,19 @@ class ReachableCmdLineArg(BooleanCmdLineArg):
                             long_arg='reachable',
                             help_text="Test if replication endpoint can be TCP connected to",
                             settings_key = 'reachable_arg',
+                            settings_default_value = False,
+                            settings_set_value = True)
+
+class DoTriggerCmdLineArg(BooleanCmdLineArg):
+    """
+    Process do_trigger trigger candidate flag
+    """
+    def __init__(self):
+        BooleanCmdLineArg.__init__(self,
+                            short_arg='t',
+                            long_arg='do-trigger',
+                            help_text="Create do_trigger flagged triggers for datasets",
+                            settings_key = 'do_trigger_arg',
                             settings_default_value = False,
                             settings_set_value = True)
 
@@ -62,6 +75,7 @@ class ZsnapdTriggerProcess(Process):
         """
         super().__init__(usage_message=USAGE_MESSAGE,
             command_description=COMMAND_DESCRIPTION, *args, **kwargs)
+        self.cmdline_arg_list.append(DoTriggerCmdLineArg())
         self.cmdline_arg_list.append(ReachableCmdLineArg())
 
     def parse_argv_left(self, argv_left):
@@ -81,7 +95,7 @@ class ZsnapdTriggerProcess(Process):
         ds_settings = Config.read_ds_config()
         # Process triggers
         if not(Manager.touch_trigger(ds_settings, 
-            settings['reachable_arg'], *self.argv_left)):
+            settings['reachable_arg'], settings['do_trigger_arg'], *self.argv_left)):
             sys.exit(os.EX_CONFIG)
         sys.exit(os.EX_OK)
    
