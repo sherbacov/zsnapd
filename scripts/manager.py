@@ -99,7 +99,7 @@ class Manager(object):
     """
 
     @staticmethod
-    def touch_trigger(ds_settings, test_reachable, *args):
+    def touch_trigger(ds_settings, test_reachable, do_trigger, *args):
         """
         Runs around creating .trigger files for datasets with time = trigger
         """
@@ -107,6 +107,12 @@ class Manager(object):
         datasets = ZFS.get_datasets()
         ds_candidates = [ds.rstrip('/') for ds in args if ds[0] != '/']
         mnt_candidates = [m.rstrip('/') for m in args if m[0] == '/']
+        do_trigger_candidates = [ds for ds in ds_settings if ds_settings[ds]['do_trigger']]
+        if (do_trigger and do_trigger_candidates):
+            ds_candidates += do_trigger_candidates
+        if (not len(ds_candidates) and not len(mnt_candidates)):
+            log_error("No triggers configured or specified.")
+            sys.exit(os.EX_NOINPUT)
         trigger_mnts_dict = {ds_settings[ds]['mountpoint']:ds for ds in ds_settings if ds_settings[ds]['time'].is_trigger()}
         if len(ds_candidates):
             for candidate in ds_candidates:
@@ -125,6 +131,12 @@ class Manager(object):
                     log_error("Dataset '{0}' for trigger mount {1} does not exist.".format(candidate, trigger_mnts_dict[candidate]))
                     sys.exit(os.EX_DATAERR)
                 ds_candidates.append(trigger_mnts_dict[candidate])
+        # Check ds_candidates for is_trigger and mnt point
+        for ds in ds_candidates:
+            if (not ds_settings[ds]['time'].is_trigger() and settings['verbose']):
+                log_info("Dataset '{0}' is not configured for triggers - skipping.".format(ds))
+            if (not ds_settings[ds]['mountpoint'] and settings['verbose']):
+                log_info("Dataset '{0}' does not have a mountpoint configured - skipping.".format(ds))
 
         is_connected = IsConnected()
         for dataset in datasets:
@@ -139,7 +151,7 @@ class Manager(object):
                     clean = bool(dataset_settings['schema'])
 
                     if take_snapshot is True or replicate is True or clean is True:
-                        if dataset_settings['time'].is_trigger():
+                        if dataset_settings['time'].is_trigger() and dataset_settings['mountpoint']:
                             # Check endpoint for trigger is connected
                             if test_reachable and is_connected.test_unconnected(dataset_settings['replicate']):
                                 continue
