@@ -1,3 +1,9 @@
+zsnapd (0.8.11d-1) unstable; urgency=medium
+
+  * Fix bug  default intialisation receive_mountpoint
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Thu, 05 Mar 2020 12:47:19 +1300
+
 zsnapd (0.8.11c-1) unstable; urgency=medium
 
   * Make --do-trigger use dateset.conf do_trigger flag for cleaner
