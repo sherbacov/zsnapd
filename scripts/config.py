@@ -507,7 +507,7 @@ class Config(object):
                     send_properties = ds_config.getboolean(dataset, 'replicate_send_properties', fallback=False)
                     append_basename, append_fullname = check_ds_config_clash('replicate_append_basename', 'replicate_append_fullname')
                     receive_no_mountpoint, receive_mountpoint = check_ds_config_clash('replicate_receive_no_mountpoint', 'replicate_receive_mountpoint', 
-                                                                        fallback1=(full_clone or send_properties))
+                                                                        fallback1=(full_clone or send_properties), fallback2='')
                     if (receive_no_mountpoint and receive_mountpoint):
                         # Setting a receive_mountpoint overrides a full_clone receive_no_mountpoint
                         receive_no_mountpoint = False
@@ -558,7 +558,7 @@ class Config(object):
                     send_properties = ds_config.getboolean(dataset, 'replicate2_send_properties', fallback=False)
                     append_basename, append_fullname = check_ds_config_clash('replicate2_append_basename', 'replicate2_append_fullname')
                     receive_no_mountpoint, receive_mountpoint = check_ds_config_clash('replicate2_receive_no_mountpoint', 'replicate2_receive_mountpoint', 
-                                                                        fallback1=(full_clone or send_properties))
+                                                                        fallback1=(full_clone or send_properties), fallback2='')
                     if (receive_no_mountpoint and receive_mountpoint):
                         # Setting a receive_mountpoint overrides a full_clone receive_no_mountpoint
                         receive_no_mountpoint = False
