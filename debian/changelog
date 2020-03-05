@@ -1,3 +1,9 @@
+zsnapd (0.8.11e-1) unstable; urgency=medium
+
+  * UNRELEASED
+
+ -- Matthew Grant <matt@mattgrant.net.nz>  Fri, 06 Mar 2020 08:39:10 +1300
+
 zsnapd (0.8.11d-1) unstable; urgency=medium
 
   * Fix bug  default intialisation receive_mountpoint
