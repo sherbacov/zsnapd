@@ -23,7 +23,8 @@ Features
 * Systemd journalctl logging.
 * Full standard Unix daemon support via py-magcode-core, with logging to syslog or logfile
 * Configuration is stored in configuration files with the ini file format.  There is a template file, and a dataset file.
-* Triggers the configured actions based on time or a '.trigger' file present in the dataset's mountpoint.
+* Triggers the configured actions based on time or a '.trigger' file present in the dataset's mountpoint, location read
+  from /proc/mounts.
 * Can take snapshots (with a yyyymmdd timestamp format)
 * Can replicate snapshots to/from other nodes
   * Push based when the replication source has access to the replication target
@@ -153,9 +154,14 @@ Examples
 
 A summary of the different options:
 
-* mountpoint: Points to the location to which the dataset is mounted, None for volumes
-* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, 'trigger', or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  Alon with the timestamps, 'trigger' indicates that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset. As shown above, '{template}' is substituted for the time specification string from the template for that dataset in the dataset file.  Thus the time setting for an individual dataset using a template can be augmented in its definition.
+* mountpoint: Points to the location to which the dataset is mounted, None for volumes.  Used only for triggers. Defaults to value in /proc/mounts if available.
+* do_trigger: Dataset is a candidate for devops triggers with 'zsnapd-trigger -t'.
+* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, 'trigger', or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  Alone with the timestamps, 'trigger' indicates that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset. As shown above, '{template}' is substituted for the time specification string from the template for that dataset in the dataset file.  Thus the time setting for an individual dataset using a template can be augmented in its definition.
 * snapshot: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
+* replicate_append_basename: Append last part of dataset name (after last '/') to target dataset name and receive mount point, joining with a '/'.
+* replicate2_append_basename: Append last part of dataset name (after last '/') to target dataset name and receive mount point, joining with a '/'.
+* replicate_append_fullname: Append dataset name without pool name to target datset name and receive mount point, joining with a '/'.
+* replicate2_append_fullname: Append dataset name without pool name to target datset name and receive mount point, joining with a '/'.
 * replicate_endpoint: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
 * replicate_endpoint_host: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
 * replicate2_endpoint_host: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
@@ -170,6 +176,9 @@ A summary of the different options:
 * replicate2_full_clone: Full clone of dataset and all sub ordinate datasets and properties
 * replicate_receive_save: If transfer fails create a save point for resuming transfer
 * replicate2_receive_save: If transfer fails create a save point for resuming transfer
+* replicate_receive_mountpoint: Specify mount point value for received dataset (on remote if pushed).
+* replicate2_receive_mountpoint: Specify mount point value for received remote dataset.
+* replicate_receive_no_mountpoint: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
 * replicate_receive_no_mountpoint: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
 * replicate2_receive_no_mountpoint: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
 * replicate_receive_umount: Don't mount received dataset. Defaults to True if replicate_send_properties or replicate_full_clone is set.
