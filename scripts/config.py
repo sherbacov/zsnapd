@@ -442,7 +442,7 @@ class Config(object):
                 # Calculate mountpoint
                 zfs_mountpoint = None
                 if dataset in datasets:
-                    zfs_mountpoint = datasets[dataset]['mountpoint']
+                    zfs_mountpoint = settings['zfs_proc_mounts'].get(dataset, None)
                     zfs_mountpoint = zfs_mountpoint if zfs_mountpoint not in ZFS_MOUNTPOINT_NONE else None
                 mountpoint = ds_config.get(dataset, 'mountpoint', fallback=zfs_mountpoint)
                 # Work out time_spec

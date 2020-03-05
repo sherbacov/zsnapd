@@ -44,4 +44,18 @@ settings['debug_sleep_time'] = 15 # seconds
 settings['startup_hysteresis_time'] = 15 # seconds
 settings['connect_retry_wait'] = 3 # seconds
 
-
+def read_proc_mounts():
+    zfs_mnts = {}
+    try:
+        for mnt in open('/proc/self/mounts'):
+            mnt = mnt.split(' ')
+            if (len(mnt) < 3):
+                continue
+            if (mnt[2] != 'zfs'):
+              continue
+            zfs_mnts[mnt[0]] = mnt[1]
+    except:
+        pass
+    return zfs_mnts
+settings['zfs_proc_mounts'] = read_proc_mounts()
+ 
