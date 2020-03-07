@@ -44,7 +44,6 @@ settings['debug_sleep_time'] = 15 # seconds
 settings['startup_hysteresis_time'] = 15 # seconds
 settings['connect_retry_wait'] = 3 # seconds
 
-settings['zfs_proc_not_mounts'] = ('/var/lib/lxd/devices',)
 def read_proc_mounts():
     zfs_mnts = {}
     try:
@@ -53,9 +52,7 @@ def read_proc_mounts():
             if (len(mnt) < 3):
                 continue
             if (mnt[2] != 'zfs'):
-                continue
-            if (mnt[1].startswith(settings['zfs_proc_not_mounts'])):
-                continue
+              continue
             zfs_mnts[mnt[0]] = mnt[1]
     except:
         pass
