@@ -54,6 +54,8 @@ def read_proc_mounts():
                 continue
             if (mnt[2] != 'zfs'):
                 continue
+            if zfs_mnts.get(mnt[0], None):
+                continue
             if (mnt[1].startswith(settings['zfs_proc_not_mounts'])):
                 continue
             zfs_mnts[mnt[0]] = mnt[1]
