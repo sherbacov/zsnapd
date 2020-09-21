@@ -24,7 +24,7 @@ Features
 * Full standard Unix daemon support via py-magcode-core, with logging to syslog or logfile
 * Configuration is stored in configuration files with the ini file format.  There is a template file, and a dataset file.
 * Triggers the configured actions based on time or a '.trigger' file present in the dataset's mountpoint, location read
-  from /proc/mounts.
+  from `/proc/mounts`.
 * Can take snapshots (with a yyyymmdd timestamp format)
 * Can replicate snapshots to/from other nodes
   * Push based when the replication source has access to the replication target
@@ -35,179 +35,183 @@ Features
 * Supports pre and post commands
   * Pre command is executed before any action is executed
   * Post command is executed after the actions are executed, but before cleaning
-* Has sshd remote execution filter script zsnapd-rcmd.  See etc/zsnapd/zsnapd-rcmd.conf for configuration.
+* Has sshd remote execution filter script zsnapd-rcmd.  See `/etc/zsnapd/zsnapd-rcmd.conf` for configuration.
 
 Configuration
 -------------
 
-The daemon configuration file is in /etc/zsnapd/process.conf in ini format and a sample is as follows:
+The daemon configuration file is in `/etc/zsnapd/process.conf` in ini format and a sample is as follows:
+```ini
+[DEFAULT]
+run_as_user = root
 
-		[DEFAULT]
-		run_as_user = root
+[zsnapd]
+# Use following setting to check daemon reconfiguring
+daemon_canary = blau
+debug_mark = True
+# Both below in seconds
+sleep_time = 300
+debug_sleep_time = 15
+# dataset configuration file
+# dataset_config_file = /etc/zsnapd/datasets.conf
+# dataset_config_file = /etc/zfssnapmanager.cfg
+# Uncomment to set up syslog logging
+# see pydoc3 syslog and man 3 syslog for value names with 'LOG_'
+# prefix stripped
+#syslog_facility = DAEMON
+#syslog_level = INFO
+# Uncomment to set up file logging
+#log_file = /var/log/zsnapd.log
+#log_file_max_size_kbytes = 1024
+#log_file_backup_count = 7
 
-		[zsnapd]
-		# Use following setting to check daemon reconfiguring
-		daemon_canary = blau
-		debug_mark = True
-		# Both below in seconds
-		sleep_time = 300
-		debug_sleep_time = 15
-    # dataset configuration file
-    # dataset_config_file = /etc/zsnapd/datasets.conf
-    # dataset_config_file = /etc/zfssnapmanager.cfg
-		# Uncomment to set up syslog logging
-		# see pydoc3 syslog and man 3 syslog for value names with 'LOG_'
-		# prefix stripped
-		#syslog_facility = DAEMON
-		#syslog_level = INFO
-		# Uncomment to set up file logging
-		#log_file = /var/log/zsnapd.log
-		#log_file_max_size_kbytes = 1024
-		#log_file_backup_count = 7
+[zsnapd-cfgtest]
+log_level = DEBUG
 
-    [zsnapd-cfgtest]
-    log_level = DEBUG
-
-    [zsnapd-trigger]
-    log_level = DEBUG
+[zsnapd-trigger]
+log_level = DEBUG
+```
 
 Adjust sleep_time (in seconds) to set interval zsnapd runs code.  For 30 minute intervals, set to
 1800 seconds.
 
 Command line arguments to zsnapd are:
+```
+Usage: zsnapd [-dhv] [-c config_file]
 
-		Usage: zsnapd [-dhv] [-c config_file]
+	ZFS Snap Managment Daemon
 
-			ZFS Snap Managment Daemon
+	-c, --config-file       set configuration file
+	-d, --debug             set debug level {0-3|none|normal|verbose|extreme}
+	-h, --help              help message
+	-b, --memory-debug      memory debug output
+	-S, --systemd           Run as a systemd daemon, no fork
+	-v, --verbose           verbose output
+	-r, --rpdb2-wait        Wait for rpdb2 (seconds)
+```
 
-			-c, --config-file       set configuration file
-			-d, --debug             set debug level {0-3|none|normal|verbose|extreme}
-			-h, --help              help message
-			-b, --memory-debug      memory debug output
-			-S, --systemd           Run as a systemd daemon, no fork
-			-v, --verbose           verbose output
-			-r, --rpdb2-wait        Wait for rpdb2 (seconds)
-
-Note the default configuration file is /etc/zsnapd/process.conf, and systemd native mode is via the
+Note the default configuration file is `/etc/zsnapd/process.conf`, and systemd native mode is via the
 --systemd switch
 
 The dataset configuration file is located in /etc/zsnapd and is called dataset.conf. It's an .ini
 file containing a section per dataset/volume that needs to be managed.  There is also a template .ini
-file called template.conf in the same directory
+file called `template.conf` in the same directory
 
 zsnapd-cfgtest tests the data set conifugration file, and zsnapd-trigger writes out .trigger files
 based on the data set configuration. It takes either the mount point of the target dataset as an argument, 
 or the full dataset name including storage pool. zsnapd-trigger can optionally do a connectivity test first
 before writing out the .trigger file. The same connectivty test is done before zsnapd attempts replication, and
-it uses the replicate_endpoint_host and replicate_endpoint_port settings for the dataset. 
+it uses the `replicate_endpoint_host` and `replicate_endpoint_port` settings for the dataset. 
 
 Examples
 
 /etc/zsnapd/template.conf:
+```ini
+[DEFAULT]
+replicate_endpoint_host = nas.local
 
-    [DEFAULT]
-    replicate_endpoint_host = nas.local
+[backup-local]
+replicate_endpoint_port = 2345
+replicate_endpoint_command = ssh -l backup -p {port} {host}
+compression = gzip
+time = 17:00 - 21:00 /2
 
-    [backup-local]
-    replicate_endpoint_port = 2345
-    replicate_endpoint_command = ssh -l backup -p {port} {host}
-    compression = gzip
-    time = 17:00 - 21:00 /2
-
-    [backup-other]
-    replicate_endpoint_host = other.remote.server.org
+[backup-other]
+replicate_endpoint_host = other.remote.server.org
+```
 
 /etc/zsnapd/dataset.conf:
-    [DEFAULT]
-    time = trigger
+```ini
+[DEFAULT]
+time = trigger
 
-    [zroot]
-    template = backup-local
-    mountpoint = /
-    time = {template}, trigger
-    snapshot = True
-    schema = 7d3w11m5y
+[zroot]
+template = backup-local
+mountpoint = /
+time = {template}, trigger
+snapshot = True
+schema = 7d3w11m5y
 
-    [zpool/data]
-    mountpoint = /mnt/data
-    time = trigger
-    snapshot = True
-    schema = 5d0w0m0y
-    preexec = echo "starting" | mail somebody@example.com
-    postexec = echo "finished" | mail somebody@exampe.com
+[zpool/data]
+mountpoint = /mnt/data
+time = trigger
+snapshot = True
+schema = 5d0w0m0y
+preexec = echo "starting" | mail somebody@example.com
+postexec = echo "finished" | mail somebody@exampe.com
 
-    [zpool/myzvol]
-    mountpoint = None
-    time = 21:00
-    snapshot = True
-    schema = 7d3w0m0y
+[zpool/myzvol]
+mountpoint = None
+time = 21:00
+snapshot = True
+schema = 7d3w0m0y
 
-    [zpool/backups/data]
-    template = backup-other
-    mountpoint = /mnt/backups/data
-    time = 08:00, 19:00-23:00/00:30
-    snapshot = False
-    replicate_source = zpool/data
-    schema = 7d3w11m4y
-    replicate_full_clone = True
-    buffer_size = 128M
-
+[zpool/backups/data]
+template = backup-other
+mountpoint = /mnt/backups/data
+time = 08:00, 19:00-23:00/00:30
+snapshot = False
+replicate_source = zpool/data
+schema = 7d3w11m4y
+replicate_full_clone = True
+buffer_size = 128M
+```
 A summary of the different options:
 
-* mountpoint: Points to the location to which the dataset is mounted, None for volumes.  Used only for triggers. Defaults to value in /proc/mounts if available.
-* do_trigger: Dataset is a candidate for devops triggers with 'zsnapd-trigger -t'.
-* time: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, 'trigger', or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  Alone with the timestamps, 'trigger' indicates that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset. As shown above, '{template}' is substituted for the time specification string from the template for that dataset in the dataset file.  Thus the time setting for an individual dataset using a template can be augmented in its definition.
-* snapshot: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
-* replicate_append_basename: Append last part of dataset name (after last '/') to target dataset name and receive mount point, joining with a '/'.
-* replicate2_append_basename: Append last part of dataset name (after last '/') to target dataset name and receive mount point, joining with a '/'.
-* replicate_append_fullname: Append dataset name without pool name to target datset name and receive mount point, joining with a '/'.
-* replicate2_append_fullname: Append dataset name without pool name to target datset name and receive mount point, joining with a '/'.
-* replicate_endpoint: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
-* replicate_endpoint_host: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
-* replicate2_endpoint_host: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
-* replicate_endpoint_port: port that has to be remotely accessed
-* replicate2_endpoint_port: port that has to be remotely accessed
-* replicate_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
-* replicate2_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
-* replicate_target: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
-* replicate2_target: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
-* replicate_source: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
-* replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
-* replicate2_full_clone: Full clone of dataset and all sub ordinate datasets and properties
-* replicate_receive_save: If transfer fails create a save point for resuming transfer
-* replicate2_receive_save: If transfer fails create a save point for resuming transfer
-* replicate_receive_mountpoint: Specify mount point value for received dataset (on remote if pushed).
-* replicate2_receive_mountpoint: Specify mount point value for received remote dataset.
-* replicate_receive_no_mountpoint: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
-* replicate_receive_no_mountpoint: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
-* replicate2_receive_no_mountpoint: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
-* replicate_receive_umount: Don't mount received dataset. Defaults to True if replicate_send_properties or replicate_full_clone is set.
-* replicate2_receive_umount: Don't mount received dataset. Defaults to True if replicate_send_properties or replicate_full_clone is set.
-* replicate_send_compression: zfs send using compressed data from disk
-* replicate2_send_compression: zfs send using compressed data from disk
-* replicate_send_raw: zfs send using raw data from disk
-* replicate2_send_raw: zfs send using raw data from disk
-* replicate_send_properties: zfs send sends all properties of dataset
-* replicate2_send_properties: zfs send sends all properties of dataset
-* replicate_full_clone: Full clone of dataset and all sub ordinate datasets and properties
-* replicate2_full_clone: Full clone of dataset and all sub ordinate datasets and properties
-* buffer_size: Give mbuffer buffer size in units of k, M, and G - kilobytes, Megabytes, and Gigabytes respectively.
-* buffer2_size: Give mbuffer buffer size in units of k, M, and G - kilobytes, Megabytes, and Gigabytes respectively.
-* compression: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
-* compression2: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
-* schema: In case the snapshots should be cleaned, this is the schema the manager will use to clean.
-* local_schema: For local snapshot cleaning/aging when dataset is receptical for remote source when snapshots are pulled
-* remote_schema: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
-* remote2_schema: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
-* preexec: A command that will be executed, before snapshot/replication. Should be omitted if nothing should be executed
-* postexec: A command that will be executed, after snapshot/replication,  but before the cleanup. Should be omitted if nothing should be executed
-* clean_all: Clean/age all snapshots in dataset - default is False - ie zsnapd only
-* local_clean_all: Setting for local dataset when replicating source is remote
-* remote_clean_all: Setting for remove dataset when replicating source is local
-* remote2_clean_all: Setting for remove dataset when replicating source is local
-* all_snapshots: Replicate all snapshots in dataset - Default is True - ie all snapshots in dataset
-* replicate_all: Deprecated.  Use all_snapshots
-* log_commands: Per dataset log all commands executed for the dataset to DEBUG.  For checking what the program is doing exactly, helpful for auditing and security. 
+* `mountpoint`: Points to the location to which the dataset is mounted, None for volumes.  Used only for triggers. Defaults to value in /proc/mounts if available.
+* `do_trigger`: Dataset is a candidate for devops triggers with 'zsnapd-trigger -t'.
+* `time`: Can be either a timestamp in 24h hh:mm notation after which a snapshot needs to be taken, a time range, 'trigger', or a comma separated list of such items. A time range consists of a start time, then a dash, an end time, with an optional interval separated by a '/'. The interval can be given in hours, or HH:MM format.  If not given, it is 1 hour.  Alone with the timestamps, 'trigger' indicates that it will take a snapshot as soon as a file with name '.trigger' is found in the dataset's mountpoint. This can be used in case data is for example rsynced to the dataset. As shown above, '{template}' is substituted for the time specification string from the template for that dataset in the dataset file.  Thus the time setting for an individual dataset using a template can be augmented in its definition.
+* `snapshot`: Indicates whether a snapshot should be taken or not. It might be possible that only cleaning needs to be executed if this dataset is actually a replication target for another machine.
+* `replicate_append_basename`: Append last part of dataset name (after last '/') to target dataset name and receive mount point, joining with a '/'.
+* `replicate2_append_basename`: Append last part of dataset name (after last '/') to target dataset name and receive mount point, joining with a '/'.
+* `replicate_append_fullname`: Append dataset name without pool name to target datset name and receive mount point, joining with a '/'.
+* `replicate2_append_fullname`: Append dataset name without pool name to target datset name and receive mount point, joining with a '/'.
+* `replicate_endpoint`: Deprecated. Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* `replicate_endpoint_host`: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* `replicate2_endpoint_host`: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
+* `replicate_endpoint_port`: port that has to be remotely accessed
+* `replicate2_endpoint_port`: port that has to be remotely accessed
+* `replicate_endpoint_command`: Command template for remote access. Takes two keys {port} and {host}
+* `replicate2_endpoint_command`: Command template for remote access. Takes two keys {port} and {host}
+* `replicate_target`: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
+* `replicate2_target`: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.
+* `replicate_source`: The source from which to pull the snapshots to receive onto the local dataset. Should be omitted if no replication is required or a replication_target is specified.
+* `replicate_full_clone`: Full clone of dataset and all sub ordinate datasets and properties
+* `replicate2_full_clone`: Full clone of dataset and all sub ordinate datasets and properties
+* `replicate_receive_save`: If transfer fails create a save point for resuming transfer
+* `replicate2_receive_save`: If transfer fails create a save point for resuming transfer
+* `replicate_receive_mountpoint`: Specify mount point value for received dataset (on remote if pushed).
+* `replicate2_receive_mountpoint`: Specify mount point value for received remote dataset.
+* `replicate_receive_no_mountpoint`: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
+* `replicate_receive_no_mountpoint`: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
+* `replicate2_receive_no_mountpoint`: Remove mountpoint from received properties. Defaults to True if replicate_send_properties or replicate_full_clone is set.
+* `replicate_receive_umount`: Don't mount received dataset. Defaults to True if replicate_send_properties or replicate_full_clone is set.
+* `replicate2_receive_umount`: Don't mount received dataset. Defaults to True if replicate_send_properties or replicate_full_clone is set.
+* `replicate_send_compression`: zfs send using compressed data from disk
+* `replicate2_send_compression`: zfs send using compressed data from disk
+* `replicate_send_raw`: zfs send using raw data from disk
+* `replicate2_send_raw`: zfs send using raw data from disk
+* `replicate_send_properties`: zfs send sends all properties of dataset
+* `replicate2_send_properties`: zfs send sends all properties of dataset
+* `replicate_full_clone`: Full clone of dataset and all sub ordinate datasets and properties
+* `replicate2_full_clone`: Full clone of dataset and all sub ordinate datasets and properties
+* `buffer_size`: Give mbuffer buffer size in units of k, M, and G - kilobytes, Megabytes, and Gigabytes respectively.
+* `buffer2_size`: Give mbuffer buffer size in units of k, M, and G - kilobytes, Megabytes, and Gigabytes respectively.
+* `compression`: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
+* `compression2`: Indicates the compression program to pipe remote replicated snapshots through (for use in low-bandwidth setups.) The compression utility should accept standard compression flags (`-c` for standard output, `-d` for decompress.)
+* `schema`: In case the snapshots should be cleaned, this is the schema the manager will use to clean.
+* `local_schema`: For local snapshot cleaning/aging when dataset is receptical for remote source when snapshots are pulled
+* `remote_schema`: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
+* `remote2_schema`: For remote snapshot cleaning/aging when remote target is receptical for backup when snapshots are pushed
+* `preexec`: A command that will be executed, before snapshot/replication. Should be omitted if nothing should be executed
+* `postexec`: A command that will be executed, after snapshot/replication,  but before the cleanup. Should be omitted if nothing should be executed
+* `clean_all`: Clean/age all snapshots in dataset - default is False - ie zsnapd only
+* `local_clean_all`: Setting for local dataset when replicating source is remote
+* `remote_clean_all`: Setting for remove dataset when replicating source is local
+* `remote2_clean_all`: Setting for remove dataset when replicating source is local
+* `all_snapshots`: Replicate all snapshots in dataset - Default is True - ie all snapshots in dataset
+* `replicate_all`: Deprecated.  Use all_snapshots
+* `log_commands`: Per dataset log all commands executed for the dataset to DEBUG.  For checking what the program is doing exactly, helpful for auditing and security. 
 
 Naming convention
 -----------------
@@ -270,29 +274,32 @@ zsnapd-rcmd is the security plugin command for sshd that implements ForceCommand
 functionality, or the command functionality in the .ssh/authorized_keys file
 (See the sshd_config(8) and sshd(8) man pages respectively).
 
-It executes commands from the SSH_ORIGINAL_COMMAND variable after checking
+It executes commands from the `SSH_ORIGINAL_COMMAND` variable after checking
 them against a list of configured regular expressions. 
 
-Edit the zsnapd-rcmd.conf files in /etc/zsnapd, to set up the check regexps
+Edit the zsnapd-rcmd.conf files in `/etc/zsnapd`, to set up the check regexps
 for the remote preexec, postexec, and replicate_postexec commands.  Settings
 are also available for 10 extra remote commands, labeled rcmd_aux0 - rcmd_aux9
 
 Read the sshd(8) manpage on the ForceCommand setting, and the sshd(8) manpage
-on the /root/.ssh/authorized_keys file, command entry for the remote pub key
+on the `/root/.ssh/authorized_keys` file, command entry for the remote pub key
 for zsnapd access.
 
 Example .ssh/authorized_keys entry (single line - unline wrap it):
 
+```
 no-pty,no-agent-forwarding,no-X11-forwarding,no-port-forwarding,
 command="/usr/sbin/zsnapd-rcmd" ssh-rsa AAAABBBBBBBBCCCCCCCCCCCCC
 DDDDDDDD== root@blah.org
+```
 
 Hint: command line arguments can be given, such as a different config file,
 and debug level:
-
+```
 no-pty,no-agent-forwarding,no-X11-forwarding,no-port-forwarding,
 command="/usr/sbin/zsnapd-rcmd -c /etc/zsnapd/my-rcmd.conf --debug 3" 
 ssh-rsa AAAABBBBBBBBCCCCCCCCCCCCCDDDDDDDD== root@blah.org
+```
 
 Examples
 --------
