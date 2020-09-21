@@ -32,9 +32,9 @@ except ImportError:
 from magcode.core.process import Process
 from magcode.core.globals_ import *
 # import this to set up config file settings etc
-import scripts.globals_
-from scripts.manager import Manager
-from scripts.config import Config
+import zsnapd.globals_
+from zsnapd.manager import Manager
+from zsnapd.config import Config
 
 USAGE_MESSAGE = "Usage: %s [-hv] [-c config_file]"
 COMMAND_DESCRIPTION = "ZFS Snap Managment Daemon configuration tester"
