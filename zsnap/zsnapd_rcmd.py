@@ -81,7 +81,6 @@ class ZsnapdRCmdProcess(Process):
         # Load configuration
         rshell = settings['rshell']
         allowed_cmd_regex_dict = {
-                'rcmd_zfs_get_snapshots': settings['rcmd_zfs_get_snapshots'],
                 'rcmd_zfs_get_snapshots2': settings['rcmd_zfs_get_snapshots2'],
                 'rcmd_zfs_get_datasets': settings['rcmd_zfs_get_datasets'],
                 'rcmd_zfs_snapshot': settings['rcmd_zfs_snapshot'],
