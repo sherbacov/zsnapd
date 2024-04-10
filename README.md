@@ -99,7 +99,7 @@ zsnapd-cfgtest tests the data set conifugration file, and zsnapd-trigger writes 
 based on the data set configuration. It takes either the mount point of the target dataset as an argument, 
 or the full dataset name including storage pool. zsnapd-trigger can optionally do a connectivity test first
 before writing out the .trigger file. The same connectivty test is done before zsnapd attempts replication, and
-it uses the replicate_endpoint_host and replicate_endpoint_port settings for the dataset. 
+it uses the replicate_endpoint_login, replicate_endpoint_host and replicate_endpoint_port settings for the dataset. 
 
 Examples
 
@@ -110,7 +110,8 @@ Examples
 
     [backup-local]
     replicate_endpoint_port = 2345
-    replicate_endpoint_command = ssh -l backup -p {port} {host}
+    replicate_endpont_login = backup
+    replicate_endpoint_command = ssh -l {login} -p {port} {host}
     compression = gzip
     time = 17:00 - 21:00 /2
 
@@ -167,6 +168,8 @@ A summary of the different options:
 * replicate2_endpoint_host: Can be left empty if replicating on localhost (e.g. copying snapshots to other pool). Should be omitted if no replication is required.
 * replicate_endpoint_port: port that has to be remotely accessed
 * replicate2_endpoint_port: port that has to be remotely accessed
+* replicate_endpoint_login: remote login for ssh. Defaults to root
+* replicate2_endpoint_login: remote login for ssh. Defaults to root
 * replicate_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
 * replicate2_endpoint_command: Command template for remote access. Takes two keys {port} and {host}
 * replicate_target: The target to which the snapshots should be send. Should be omitted if no replication is required or a replication_source is specified.

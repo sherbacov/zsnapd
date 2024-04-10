@@ -97,6 +97,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate_target': ds_name_syntax,
         'replicate_source': ds_name_syntax,
         'replicate_endpoint': NETCMD_REGEX,
+        'replicate_endpoint_login': USER_REGEX,
         'replicate_endpoint_host': HOST_REGEX,
         'replicate_endpoint_port': PORT_REGEX,
         'replicate_endpoint_command': SHELLFORMAT_REGEX,
@@ -112,6 +113,7 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'replicate2_send_raw': BOOLEAN_REGEX,
         'replicate2_target': ds_name_syntax,
         'replicate2_endpoint': NETCMD_REGEX,
+        'replicate2_endpoint_login': USER_REGEX,
         'replicate2_endpoint_host': HOST_REGEX,
         'replicate2_endpoint_port': PORT_REGEX,
         'replicate2_endpoint_command': SHELLFORMAT_REGEX,
@@ -128,8 +130,9 @@ ds_syntax_dict = {'snapshot': BOOLEAN_REGEX,
         'remote2_clean_all': BOOLEAN_REGEX,
         'template': template_name_syntax,
         }
+DEFAULT_ENDPOINT_LOGIN = 'root'
 DEFAULT_ENDPOINT_PORT = 22
-DEFAULT_ENDPOINT_CMD = 'ssh -p {port} {host}'
+DEFAULT_ENDPOINT_CMD = 'ssh -l {login} -p {port} {host}'
 DATE_SPEC = '%Y%m%d '
 ZFS_MOUNTPOINT_NONE = ('legacy', 'none')
 
@@ -495,10 +498,11 @@ class Config(object):
                         and (ds_config.has_option(dataset, 'replicate_target') or ds_config.has_option(dataset, 'replicate_source'))):
                     host = ds_config.get(dataset, 'replicate_endpoint_host', fallback='')
                     port = ds_config.get(dataset, 'replicate_endpoint_port', fallback=DEFAULT_ENDPOINT_PORT)
+                    login = ds_config.get(dataset, 'replicate_endpoint_login', fallback=DEFAULT_ENDPOINT_LOGIN)
                     if ds_config.has_option(dataset, 'replicate_endpoint_host'):
                         command = ds_config.get(dataset, 'replicate_endpoint_command', fallback=DEFAULT_ENDPOINT_CMD)
                         if host:
-                            endpoint = command.format(port=port, host=host)
+                            endpoint = command.format(port=port, host=host, login=login)
                         else:
                             endpoint = ''
                     else:
@@ -547,10 +551,11 @@ class Config(object):
                         and (ds_config.has_option(dataset, 'replicate2_target'))):
                     host = ds_config.get(dataset, 'replicate2_endpoint_host', fallback='')
                     port = ds_config.get(dataset, 'replicate2_endpoint_port', fallback=DEFAULT_ENDPOINT_PORT)
+                    login = ds_config.get(dataset, 'replicate2_endpoint_login', fallback=DEFAULT_ENDPOINT_LOGIN)
                     if ds_config.has_option(dataset, 'replicate2_endpoint_host'):
                         command = ds_config.get(dataset, 'replicate2_endpoint_command', fallback=ds_config.get(dataset, 'replicate_endpoint_command', fallback=DEFAULT_ENDPOINT_CMD))
                         if host:
-                            endpoint = command.format(port=port, host=host)
+                            endpoint = command.format(port=port, host=host, login=login)
                         else:
                             endpoint = ''
                     else:
