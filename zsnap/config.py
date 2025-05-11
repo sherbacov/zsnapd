@@ -375,6 +375,7 @@ class Config(object):
                 config.read_dict(default_dict)
             config.read_file(file_)
             if dirname:
+                file_list = []
                 for root, dirs, files in os.walk(dirname):
                     file_list = [os.path.join(root, name) for name in files]
                 config.read(file_list)
